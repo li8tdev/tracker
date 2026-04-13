@@ -22,7 +22,8 @@ import { DatePicker } from '@/components/DatePicker';
 import { DataActions } from '@/components/DataActions';
 import { StartDayScreen } from '@/components/StartDayScreen';
 import { WorkanaBar } from '@/components/WorkanaBar';
-import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer } from 'lucide-react';
+import { SystemRAM } from '@/components/SystemRAM';
+import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
 
 const POMODORO_DURATION = 60 * 60;
@@ -52,7 +53,7 @@ const Index = () => {
   const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'calendar' | 'ram'>('tasks');
   const [workanaPaused, setWorkanaPausedState] = useState(() => getWorkanaPaused());
   const [timersHydrated, setTimersHydrated] = useState(false);
   const sessionActiveRef = useRef(session.active);
@@ -543,15 +544,24 @@ const Index = () => {
                 <LayoutGrid size={13} />
                 Tareas
               </button>
-              <button
-                onClick={() => setActiveTab('calendar')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  activeTab === 'calendar' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <CalendarDays size={13} />
-                Calendario
-              </button>
+               <button
+                 onClick={() => setActiveTab('calendar')}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                   activeTab === 'calendar' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                 }`}
+               >
+                 <CalendarDays size={13} />
+                 Calendario
+               </button>
+               <button
+                 onClick={() => setActiveTab('ram')}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                   activeTab === 'ram' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                 }`}
+               >
+                 <Cpu size={13} />
+                 RAM
+               </button>
             </div>
             <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
             <DataActions tasks={allTasks} onImport={setTasks} />
@@ -660,8 +670,12 @@ const Index = () => {
               </div>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'calendar' ? (
           <CalendarView allTasks={allTasks} />
+        ) : (
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <SystemRAM />
+          </div>
         )}
       </div>
     </div>
