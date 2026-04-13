@@ -104,6 +104,15 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
                 <Calendar mode="single" selected={editDate} onSelect={d => { if (d) { setEditDate(d); setCalOpen(false); } }} className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
+            <div className="flex items-center gap-1">
+              <Clock size={10} className="text-muted-foreground" />
+              <input
+                type="time"
+                value={editTime}
+                onChange={e => setEditTime(e.target.value)}
+                className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-14"
+              />
+            </div>
           </div>
           <div className="flex gap-1">
             <button onClick={saveEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"><Check size={12} /></button>
@@ -134,6 +143,12 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono">
               🍅 {task.pomodorosCompleted}/{task.pomodoroCount}
             </span>
+            {task.scheduledTime && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                <Clock size={9} />
+                {task.scheduledTime}
+              </span>
+            )}
             {task.date !== new Date().toISOString().split('T')[0] && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                 <CalendarDays size={9} />
