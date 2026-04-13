@@ -63,5 +63,9 @@ export function useTimer(onDone?: TimerCallback) {
     getWorker().postMessage({ action: 'REMOVE', id });
   }, []);
 
-  return { timers, start, stop, reset, remove };
+  const restore = useCallback((entries: Array<{ id: string; remaining: number; running: boolean; type: string }>) => {
+    getWorker().postMessage({ action: 'RESTORE_BATCH', entries });
+  }, []);
+
+  return { timers, start, stop, reset, remove, restore };
 }

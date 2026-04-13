@@ -479,13 +479,13 @@ const Index = () => {
 
               <div className="space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-5">
-                  <Analytics tasks={allTasks} />
+                  <Analytics allTasks={allTasks} />
                 </div>
               </div>
             </div>
           </>
         ) : (
-          <CalendarView tasks={allTasks} selectedDate={selectedDate} onDateChange={setSelectedDate} />
+          <CalendarView allTasks={allTasks} />
         )}
       </div>
     </div>
