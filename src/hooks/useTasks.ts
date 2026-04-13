@@ -51,19 +51,10 @@ export function useTasks() {
     setTasks(prev => [...prev, task]);
   }, [selectedDate]);
 
-  // Auto-complete group when all subtasks are done
-  const checkGroupCompletion = useCallback((groupId: string) => {
+  // Auto-complete groups based on task status changes
+  const updateGroupCompletionFromTasks = useCallback((currentTasks: Task[]) => {
     setGroups(prev => prev.map(g => {
-      if (g.id !== groupId) return g;
-      // We need current tasks - will be called after task update
-      return g;
-    }));
-  }, []);
-
-  // Call this after status changes to update group completion
-  const updateGroupCompletion = useCallback((updatedTasks: Task[]) => {
-    setGroups(prev => prev.map(g => {
-      const groupTasks = updatedTasks.filter(t => t.groupId === g.id);
+      const groupTasks = currentTasks.filter(t => t.groupId === g.id);
       if (groupTasks.length === 0) return { ...g, completedAt: undefined };
       const allDone = groupTasks.every(t => t.status === 'done');
       return { ...g, completedAt: allDone ? (g.completedAt ?? new Date().toISOString()) : undefined };
@@ -81,14 +72,18 @@ export function useTasks() {
           completedAt: status === 'done' ? new Date().toISOString() : undefined,
         };
       });
-      // Check group completion
-      const task = updated.find(t => t.id === id);
-      if (task?.groupId) {
-        setTimeout(() => updateGroupCompletion(updated), 0);
-      }
       return updated;
     });
-  }, [updateGroupCompletion]);
+  }, []);
+
+  // Watch for task changes and update group completion
+  const prevTasksRef = useRef(tasks);
+  useEffect(() => {
+    if (prevTasksRef.current !== tasks) {
+      prevTasksRef.current = tasks;
+      updateGroupCompletionFromTasks(tasks);
+    }
+  }, [tasks, updateGroupCompletionFromTasks]);
 
   const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string }) => {
     setTasks(prev => prev.map(t => {
@@ -119,16 +114,8 @@ export function useTasks() {
   }, []);
 
   const deleteTask = useCallback((id: string) => {
-    setTasks(prev => {
-      const updated = prev.filter(t => t.id !== id);
-      // Check group completion for the deleted task's group
-      const deleted = prev.find(t => t.id === id);
-      if (deleted?.groupId) {
-        setTimeout(() => updateGroupCompletion(updated), 0);
-      }
-      return updated;
-    });
-  }, [updateGroupCompletion]);
+    setTasks(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayGroups = groups.filter(g => g.date === selectedDate);
