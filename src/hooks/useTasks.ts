@@ -14,12 +14,13 @@ export function useTasks() {
     saveGroups(groups);
   }, [groups]);
 
-  const addGroup = useCallback((name: string, date?: string) => {
+  const addGroup = useCallback((name: string, date?: string, isDaily?: boolean) => {
     const group: TaskGroup = {
       id: generateId(),
       name,
       date: date ?? selectedDate,
       createdAt: new Date().toISOString(),
+      isDaily,
     };
     setGroups(prev => [...prev, group]);
     return group.id;
