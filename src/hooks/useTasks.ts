@@ -20,6 +20,7 @@ export function useTasks() {
       pomodoroCount,
       pomodorosCompleted: 0,
       overtimeSeconds: 0,
+      totalWorkSeconds: 0,
     };
     setTasks(prev => [...prev, task]);
   }, [selectedDate]);
@@ -57,6 +58,13 @@ export function useTasks() {
     }));
   }, []);
 
+  const setTotalWork = useCallback((id: string, seconds: number) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      return { ...t, totalWorkSeconds: seconds };
+    }));
+  }, []);
+
   const deleteTask = useCallback((id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
@@ -64,5 +72,5 @@ export function useTasks() {
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const allTasks = tasks;
 
-  return { tasks: dayTasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, editTask };
+  return { tasks: dayTasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask };
 }

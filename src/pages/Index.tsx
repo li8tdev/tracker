@@ -13,7 +13,7 @@ import { DatePicker } from '@/components/DatePicker';
 import { DataActions } from '@/components/DataActions';
 import { StartDayScreen } from '@/components/StartDayScreen';
 import { WorkanaBar } from '@/components/WorkanaBar';
-import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid } from 'lucide-react';
+import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 
 const POMODORO_DURATION = 60 * 60; // 60 min
@@ -28,7 +28,7 @@ interface PomodoroMeta {
 }
 
 const Index = () => {
-  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, editTask } = useTasks();
+  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
@@ -174,15 +174,56 @@ const Index = () => {
     setPomodoroMeta(prev => ({ ...prev, [taskId]: { phase: 'working', currentPomodoro: nextPom } }));
   }, [start, pomodoroMeta]);
 
+  // Finish task: calculate actual work time and mark done
+  const handleFinishTask = useCallback((taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const meta = pomodoroMeta[taskId];
+    const timerVal = timers[`pomo-${taskId}`];
+
+    // Completed pomodoros work time (no breaks)
+    let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
+
+    // Add elapsed time in current pomodoro if working/paused
+    if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
+      workSeconds += POMODORO_DURATION - timerVal;
+    }
+
+    // Add overtime
+    const ot = overtimeCounters[taskId] ?? 0;
+    workSeconds += ot;
+
+    setTotalWork(taskId, workSeconds);
+
+    // Cleanup
+    stopOvertime(taskId);
+    remove(`pomo-${taskId}`);
+    setPomodoroMeta(prev => { const n = { ...prev }; delete n[taskId]; return n; });
+    updateStatus(taskId, 'done');
+    toast.success('✅ ¡Tarea terminada!', { description: `Tiempo de trabajo: ${Math.floor(workSeconds / 3600)}h ${Math.floor((workSeconds % 3600) / 60)}m` });
+  }, [tasks, pomodoroMeta, timers, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
+
   // Stop overtime when task status changes to done
   const handleStatusChange = useCallback((id: string, status: string) => {
     if (status === 'done') {
+      // Calculate work time if not already set via finish button
+      const task = tasks.find(t => t.id === id);
+      if (task && task.totalWorkSeconds === 0) {
+        const meta = pomodoroMeta[id];
+        let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
+        const timerVal = timers[`pomo-${id}`];
+        if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
+          workSeconds += POMODORO_DURATION - timerVal;
+        }
+        workSeconds += overtimeCounters[id] ?? 0;
+        if (workSeconds > 0) setTotalWork(id, workSeconds);
+      }
       stopOvertime(id);
       remove(`pomo-${id}`);
       setPomodoroMeta(prev => { const n = { ...prev }; delete n[id]; return n; });
     }
     updateStatus(id, status as any);
-  }, [updateStatus, stopOvertime, remove]);
+  }, [updateStatus, stopOvertime, remove, tasks, pomodoroMeta, timers, overtimeCounters, setTotalWork]);
 
   if (!session.active) {
     return <StartDayScreen onStart={handleStartDay} />;
@@ -202,6 +243,9 @@ const Index = () => {
     if (dayCompleted > 0) streak++;
     else break;
   }
+
+  // Total work time today (completed tasks + active timers)
+  const todayWorkSeconds = tasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
 
   const workanaRemaining = timers[WORKANA_TIMER_ID] ?? WORKANA_INTERVAL;
 
@@ -259,11 +303,12 @@ const Index = () => {
 
         {activeTab === 'tasks' ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <StatsCard label="Total hoy" value={tasks.length} icon={ListTodo} />
               <StatsCard label="Completadas" value={done.length} icon={CheckCircle2} />
               <StatsCard label="Tasa de éxito" value={`${completionRate}%`} icon={Target} accent />
               <StatsCard label="Racha" value={`${streak}d`} icon={Flame} />
+              <StatsCard label="Trabajo hoy" value={`${Math.floor(todayWorkSeconds / 3600)}h${Math.floor((todayWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -305,6 +350,7 @@ const Index = () => {
                         onPomodoroReset={handlePomodoroReset}
                         onStartBreak={handleStartBreak}
                         onContinueNext={handleContinueNext}
+                        onFinishTask={handleFinishTask}
                       />
                     ))}
                   </div>
