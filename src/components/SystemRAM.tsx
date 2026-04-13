@@ -68,6 +68,7 @@ export function SystemRAM() {
   const [newTriggerLabel, setNewTriggerLabel] = useState('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const allTriggers = [...DEFAULT_TRIGGERS, ...customTriggers];
 
