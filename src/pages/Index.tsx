@@ -281,7 +281,7 @@ const Index = () => {
                     </div>
                     {todo.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
                     {todo.map(t => (
-                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} />
+                     <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} />
                     ))}
                   </div>
 
@@ -298,6 +298,7 @@ const Index = () => {
                         task={t}
                         onStatusChange={handleStatusChange}
                         onDelete={deleteTask}
+                        onEdit={editTask}
                         pomodoroState={getPomodoroState(t.id)}
                         onPomodoroStart={handlePomodoroStart}
                         onPomodoroStop={handlePomodoroStop}
@@ -316,7 +317,7 @@ const Index = () => {
                     </div>
                     {done.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
                     {done.map(t => (
-                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} />
+                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} />
                     ))}
                   </div>
                 </div>
