@@ -78,7 +78,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
 
   if (editing) {
     return (
-      <div className="p-3 rounded-lg bg-secondary/40 border border-border space-y-2.5">
+      <div className="p-3 rounded-lg bg-secondary/40 border border-border space-y-2 overflow-hidden">
         <input
           value={editTitle}
           onChange={e => setEditTitle(e.target.value)}
@@ -86,36 +86,34 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
           autoFocus
           onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
         />
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px]">🍅</span>
-              <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground"><Minus size={10} /></button>
-              <span className="text-xs font-mono font-semibold w-3 text-center">{editPomodoros}</span>
-              <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground"><Plus size={10} /></button>
-            </div>
-            <Popover open={calOpen} onOpenChange={setCalOpen}>
-              <PopoverTrigger asChild>
-                <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
-                  <CalendarDays size={10} />
-                  {format(editDate, "d MMM", { locale: es })}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={editDate} onSelect={d => { if (d) { setEditDate(d); setCalOpen(false); } }} className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
-            <div className="flex items-center gap-1">
-              <Clock size={10} className="text-muted-foreground" />
-              <input
-                type="time"
-                value={editTime}
-                onChange={e => setEditTime(e.target.value)}
-                className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-14"
-              />
-            </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px]">🍅</span>
+            <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground"><Minus size={10} /></button>
+            <span className="text-xs font-mono font-semibold w-3 text-center">{editPomodoros}</span>
+            <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground"><Plus size={10} /></button>
           </div>
-          <div className="flex gap-1">
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
+                <CalendarDays size={10} />
+                {format(editDate, "d MMM", { locale: es })}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={editDate} onSelect={d => { if (d) { setEditDate(d); setCalOpen(false); } }} className="p-3 pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center gap-1">
+            <Clock size={10} className="text-muted-foreground" />
+            <input
+              type="time"
+              value={editTime}
+              onChange={e => setEditTime(e.target.value)}
+              className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-[3.5rem]"
+            />
+          </div>
+          <div className="flex gap-1 ml-auto">
             <button onClick={saveEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"><Check size={12} /></button>
             <button onClick={cancelEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><X size={12} /></button>
           </div>
