@@ -244,8 +244,9 @@ const Index = () => {
     else break;
   }
 
-  // Total work time today (completed tasks + active timers)
+  // Total work time today and all-time
   const todayWorkSeconds = tasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
+  const totalWorkSeconds = allTasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
 
   const workanaRemaining = timers[WORKANA_TIMER_ID] ?? WORKANA_INTERVAL;
 
@@ -303,12 +304,13 @@ const Index = () => {
 
         {activeTab === 'tasks' ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               <StatsCard label="Total hoy" value={tasks.length} icon={ListTodo} />
               <StatsCard label="Completadas" value={done.length} icon={CheckCircle2} />
               <StatsCard label="Tasa de éxito" value={`${completionRate}%`} icon={Target} accent />
               <StatsCard label="Racha" value={`${streak}d`} icon={Flame} />
               <StatsCard label="Trabajo hoy" value={`${Math.floor(todayWorkSeconds / 3600)}h${Math.floor((todayWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
+              <StatsCard label="Trabajo total" value={`${Math.floor(totalWorkSeconds / 3600)}h${Math.floor((totalWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
