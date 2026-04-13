@@ -473,9 +473,12 @@ const Index = () => {
     return <StartDayScreen onStart={handleStartDay} />;
   }
 
-  const todo = tasks.filter(t => t.status === 'todo');
-  const inProgress = tasks.filter(t => t.status === 'in_progress');
-  const done = tasks.filter(t => t.status === 'done');
+  const ungroupedTasks = tasks.filter(t => !t.groupId);
+  const todo = ungroupedTasks.filter(t => t.status === 'todo');
+  const inProgress = ungroupedTasks.filter(t => t.status === 'in_progress');
+  const done = ungroupedTasks.filter(t => t.status === 'done');
+  const allDayDone = tasks.filter(t => t.status === 'done');
+  const allDayTasks = tasks;
   const completionRate = tasks.length > 0 ? Math.round((done.length / tasks.length) * 100) : 0;
 
   let streak = 0;
