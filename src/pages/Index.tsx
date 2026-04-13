@@ -53,7 +53,7 @@ const Index = () => {
   const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'calendar' | 'ram'>('tasks');
   const [workanaPaused, setWorkanaPausedState] = useState(() => getWorkanaPaused());
   const [timersHydrated, setTimersHydrated] = useState(false);
   const sessionActiveRef = useRef(session.active);
