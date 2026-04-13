@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/lib/storage';
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2, Play, Pause } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -73,9 +73,20 @@ export function TaskGroupCard({
 
   const isDaily = !!group.isDaily;
   const done = tasks.filter(t => t.status === 'done').length;
+  const inProgress = tasks.some(t => t.status === 'in_progress');
   const total = tasks.length;
   const allDone = total > 0 && done === total;
   const totalWork = tasks.reduce((s, t) => s + (t.totalWorkSeconds ?? 0), 0);
+
+  const toggleDailyProgress = () => {
+    if (inProgress) {
+      // Pause: set in_progress tasks back to todo
+      tasks.filter(t => t.status === 'in_progress').forEach(t => onStatusChange(t.id, 'todo'));
+    } else {
+      // Play: set all non-done tasks to in_progress
+      tasks.filter(t => t.status === 'todo').forEach(t => onStatusChange(t.id, 'in_progress'));
+    }
+  };
   const totalPomodoros = tasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
   const totalPomodoroTarget = tasks.reduce((s, t) => s + t.pomodoroCount, 0);
 
@@ -116,7 +127,7 @@ export function TaskGroupCard({
   };
 
   return (
-    <div className={`rounded-lg border transition-all overflow-hidden ${allDone ? 'border-success/30 bg-success/5 opacity-60' : 'border-accent/20 bg-accent/5'}`}>
+    <div className={`rounded-lg border transition-all overflow-hidden ${allDone ? 'border-success/30 bg-success/5 opacity-60' : inProgress && isDaily ? 'border-warning/30 bg-warning/5' : 'border-accent/20 bg-accent/5'}`}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-center gap-2 p-2.5">
           <CollapsibleTrigger asChild>
@@ -125,7 +136,21 @@ export function TaskGroupCard({
             </button>
           </CollapsibleTrigger>
 
-          <FolderOpen size={14} className={allDone ? 'text-success' : 'text-accent'} />
+          <FolderOpen size={14} className={allDone ? 'text-success' : inProgress ? 'text-warning' : 'text-accent'} />
+
+          {isDaily && !editing && !allDone && (
+            <button
+              onClick={toggleDailyProgress}
+              className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full transition-all ${
+                inProgress
+                  ? 'bg-warning/15 text-warning hover:bg-warning/25'
+                  : 'bg-accent/10 text-accent hover:bg-accent/20'
+              }`}
+              title={inProgress ? 'Pausar grupo' : 'Iniciar grupo'}
+            >
+              {inProgress ? <Pause size={11} /> : <Play size={11} />}
+            </button>
+          )}
 
           {editing ? (
             <div className="flex-1 min-w-0 space-y-1.5">
