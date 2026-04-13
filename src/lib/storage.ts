@@ -5,12 +5,13 @@ export interface Task {
   title: string;
   status: TaskStatus;
   date: string; // YYYY-MM-DD
+  scheduledTime?: string; // HH:mm
   createdAt: string;
   completedAt?: string;
   startedAt?: string;
-  pomodoroCount: number; // how many pomodoros this task needs
-  pomodorosCompleted: number; // how many finished
-  overtimeSeconds: number; // extra time after all pomodoros done
+  pomodoroCount: number;
+  pomodorosCompleted: number;
+  overtimeSeconds: number;
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
