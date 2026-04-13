@@ -14,18 +14,19 @@ export function useTasks() {
     saveGroups(groups);
   }, [groups]);
 
-  const addGroup = useCallback((name: string, date?: string) => {
+  const addGroup = useCallback((name: string, date?: string, isDaily?: boolean) => {
     const group: TaskGroup = {
       id: generateId(),
       name,
       date: date ?? selectedDate,
       createdAt: new Date().toISOString(),
+      isDaily,
     };
     setGroups(prev => [...prev, group]);
     return group.id;
   }, [selectedDate]);
 
-  const editGroup = useCallback((id: string, updates: { name?: string; date?: string }) => {
+  const editGroup = useCallback((id: string, updates: { name?: string; date?: string; isDaily?: boolean }) => {
     setGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
   }, []);
 
@@ -34,7 +35,7 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.groupId !== id));
   }, []);
 
-  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string, scheduledTime?: string, groupId?: string) => {
+  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string, scheduledTime?: string, groupId?: string, isDaily?: boolean) => {
     const task: Task = {
       id: generateId(),
       title,
@@ -47,6 +48,7 @@ export function useTasks() {
       overtimeSeconds: 0,
       totalWorkSeconds: 0,
       groupId,
+      isDaily,
     };
     setTasks(prev => [...prev, task]);
   }, [selectedDate]);
@@ -85,7 +87,7 @@ export function useTasks() {
     }
   }, [tasks, updateGroupCompletionFromTasks]);
 
-  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string }) => {
+  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string; isDaily?: boolean }) => {
     setTasks(prev => prev.map(t => {
       if (t.id !== id) return t;
       return { ...t, ...updates };
@@ -117,6 +119,31 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Reset daily tasks to todo for the new day
+  const resetDailyTasks = useCallback((newDate: string) => {
+    setTasks(prev => prev.map(t => {
+      // If task is daily, or belongs to a daily group
+      const group = groups.find(g => g.id === t.groupId);
+      const isTaskDaily = t.isDaily || group?.isDaily;
+      if (!isTaskDaily) return t;
+      return {
+        ...t,
+        status: 'todo' as TaskStatus,
+        date: newDate,
+        completedAt: undefined,
+        startedAt: undefined,
+        pomodorosCompleted: 0,
+        overtimeSeconds: 0,
+        totalWorkSeconds: 0,
+      };
+    }));
+    // Reset daily groups
+    setGroups(prev => prev.map(g => {
+      if (!g.isDaily) return g;
+      return { ...g, date: newDate, completedAt: undefined };
+    }));
+  }, [groups]);
+
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayGroups = groups.filter(g => g.date === selectedDate);
   const allTasks = tasks;
@@ -125,6 +152,6 @@ export function useTasks() {
     tasks: dayTasks, allTasks, groups: dayGroups, allGroups: groups,
     addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks,
     incrementPomodoro, addOvertime, setTotalWork, editTask,
-    addGroup, editGroup, deleteGroup,
+    addGroup, editGroup, deleteGroup, resetDailyTasks,
   };
 }
