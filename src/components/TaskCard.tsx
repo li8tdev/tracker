@@ -109,40 +109,46 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
 
   return (
     <div className={`group flex flex-col gap-2 p-3 rounded-xl hover:bg-secondary/50 transition-all ${task.status === 'done' ? 'opacity-60' : ''}`}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-2">
         <button
           onClick={() => onStatusChange(task.id, config.next)}
-          className={`shrink-0 ${config.className} hover:scale-110 transition-transform`}
+          className={`shrink-0 mt-0.5 ${config.className} hover:scale-110 transition-transform`}
           title={`Cambiar a ${statusConfig[config.next].label}`}
         >
-          <Icon size={20} />
+          <Icon size={18} />
         </button>
-        <span className={`flex-1 text-sm ${task.status === 'done' ? 'line-through' : ''}`}>
-          {task.title}
-        </span>
-        <span className="text-xs text-muted-foreground font-mono">
-          🍅 {task.pomodorosCompleted}/{task.pomodoroCount}
-        </span>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-          task.status === 'todo' ? 'bg-secondary text-muted-foreground' :
-          task.status === 'in_progress' ? 'bg-accent/10 text-accent' :
-          'bg-success/10 text-success'
-        }`}>
-          {config.label}
-        </span>
-        <button
-          onClick={startEdit}
-          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-accent transition-all"
-          title="Editar"
-        >
-          <Pencil size={13} />
-        </button>
-        <button
-          onClick={() => onDelete(task.id)}
-          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="flex-1 min-w-0">
+          <span className={`text-sm leading-tight break-words ${task.status === 'done' ? 'line-through' : ''}`}>
+            {task.title}
+          </span>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground font-mono">
+              🍅 {task.pomodorosCompleted}/{task.pomodoroCount}
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+              task.status === 'todo' ? 'bg-secondary text-muted-foreground' :
+              task.status === 'in_progress' ? 'bg-accent/10 text-accent' :
+              'bg-success/10 text-success'
+            }`}>
+              {config.label}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={startEdit}
+            className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-accent transition-all"
+            title="Editar"
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            onClick={() => onDelete(task.id)}
+            className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Date badge if not today */}
