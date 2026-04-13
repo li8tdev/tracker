@@ -24,6 +24,8 @@ export interface TaskGroup {
   createdAt: string;
   completedAt?: string;
   isDaily?: boolean; // all tasks in group repeat daily
+  scheduledTime?: string; // HH:mm - when daily group starts
+  pomodoroCount?: number; // total pomodoros for the daily group
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
