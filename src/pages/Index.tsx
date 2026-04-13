@@ -28,7 +28,7 @@ interface PomodoroMeta {
 }
 
 const Index = () => {
-  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime } = useTasks();
+  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, editTask } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
@@ -99,6 +99,31 @@ const Index = () => {
   }, [overtimeCounters, addOvertime]);
 
   useEffect(() => { requestNotificationPermission(); }, []);
+
+  // Update browser tab title with active timer
+  useEffect(() => {
+    const activeTask = tasks.find(t => t.status === 'in_progress' && pomodoroMeta[t.id]?.phase === 'working');
+    if (activeTask) {
+      const secs = timers[`pomo-${activeTask.id}`];
+      if (secs !== undefined) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        document.title = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - ${activeTask.title}`;
+        return;
+      }
+    }
+    const breakingTask = tasks.find(t => t.status === 'in_progress' && pomodoroMeta[t.id]?.phase === 'breaking');
+    if (breakingTask) {
+      const secs = timers[`pomo-${breakingTask.id}`];
+      if (secs !== undefined) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        document.title = `☕ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - Descanso`;
+        return;
+      }
+    }
+    document.title = 'Tracker';
+  }, [timers, tasks, pomodoroMeta]);
 
   useEffect(() => {
     if (session.active && !workanaInitialized.current) {
@@ -256,7 +281,7 @@ const Index = () => {
                     </div>
                     {todo.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
                     {todo.map(t => (
-                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} />
+                     <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} />
                     ))}
                   </div>
 
@@ -273,6 +298,7 @@ const Index = () => {
                         task={t}
                         onStatusChange={handleStatusChange}
                         onDelete={deleteTask}
+                        onEdit={editTask}
                         pomodoroState={getPomodoroState(t.id)}
                         onPomodoroStart={handlePomodoroStart}
                         onPomodoroStop={handlePomodoroStop}
@@ -291,7 +317,7 @@ const Index = () => {
                     </div>
                     {done.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
                     {done.map(t => (
-                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} />
+                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} />
                     ))}
                   </div>
                 </div>
