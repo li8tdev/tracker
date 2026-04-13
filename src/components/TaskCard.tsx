@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskStatus } from '@/lib/storage';
-import { Circle, Clock, CheckCircle2, Trash2, Play, Pause, RotateCcw, Timer, Coffee, AlertTriangle, Pencil, Check, X, Minus, Plus, CalendarDays, MoreHorizontal } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Trash2, Play, Pause, RotateCcw, Timer, Coffee, AlertTriangle, Pencil, Check, X, Minus, Plus, CalendarDays, MoreHorizontal, Repeat } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -19,7 +19,7 @@ interface Props {
   task: Task;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
-  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string }) => void;
+  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
   pomodoroState?: PomodoroState;
   onPomodoroStart?: (id: string) => void;
   onPomodoroStop?: (id: string) => void;
@@ -52,6 +52,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
   const [editPomodoros, setEditPomodoros] = useState(task.pomodoroCount);
   const [editDate, setEditDate] = useState<Date>(new Date(task.date + 'T12:00:00'));
   const [editTime, setEditTime] = useState(task.scheduledTime ?? '');
+  const [editDaily, setEditDaily] = useState(task.isDaily ?? false);
   const [calOpen, setCalOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
@@ -60,6 +61,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
     setEditPomodoros(task.pomodoroCount);
     setEditDate(new Date(task.date + 'T12:00:00'));
     setEditTime(task.scheduledTime ?? '');
+    setEditDaily(task.isDaily ?? false);
     setEditing(true);
     setShowActions(false);
   };
@@ -70,6 +72,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
       pomodoroCount: editPomodoros,
       date: editDate.toISOString().split('T')[0],
       scheduledTime: editTime || undefined,
+      isDaily: editDaily || undefined,
     });
     setEditing(false);
   };
@@ -113,6 +116,15 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
               className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-[3.5rem]"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setEditDaily(d => !d)}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${editDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+            title="Se repite todos los días"
+          >
+            <Repeat size={9} />
+            Diario
+          </button>
           <div className="flex gap-1 ml-auto">
             <button onClick={saveEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"><Check size={12} /></button>
             <button onClick={cancelEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><X size={12} /></button>
@@ -151,6 +163,12 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                 <Clock size={9} />
                 {task.scheduledTime}
+              </span>
+            )}
+            {task.isDaily && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                <Repeat size={9} />
+                Diario
               </span>
             )}
             {task.date !== new Date().toISOString().split('T')[0] && (
