@@ -310,45 +310,14 @@ export function TaskGroupCard({
               </div>
             </div>
           ) : (
-            <>
-              <span className={`flex-1 text-[13px] font-semibold truncate ${allDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                {group.name}
-              </span>
-
-              <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                {isDaily && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
-                    <Repeat size={9} />
-                  </span>
-                )}
-                {isDaily && group.scheduledTime && (
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    <Clock size={9} className="inline mr-0.5" />
-                    {group.scheduledTime}
-                  </span>
-                )}
-                {isDaily && group.pomodoroCount && (
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    🍅 {group.pomodoroCount}
-                  </span>
-                )}
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  {done}/{total}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1">
+                <span className={`flex-1 text-[13px] font-semibold truncate ${allDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                  {group.name}
                 </span>
-                {!isDaily && totalPomodoros > 0 && (
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    🍅 {totalPomodoros}/{totalPomodoroTarget}
-                  </span>
-                )}
-                {totalWork > 0 && (
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    ⏱ {Math.floor(totalWork / 3600)}h{Math.floor((totalWork % 3600) / 60).toString().padStart(2, '0')}m
-                  </span>
-                )}
-
                 <Popover open={showActions} onOpenChange={setShowActions}>
                   <PopoverTrigger asChild>
-                    <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+                    <button className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
                       <MoreHorizontal size={13} />
                     </button>
                   </PopoverTrigger>
@@ -368,7 +337,38 @@ export function TaskGroupCard({
                   </PopoverContent>
                 </Popover>
               </div>
-            </>
+              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                {isDaily && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                    <Repeat size={9} /> Diario
+                  </span>
+                )}
+                {isDaily && group.scheduledTime && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    <Clock size={9} className="inline mr-0.5" />
+                    {group.scheduledTime}
+                  </span>
+                )}
+                {isDaily && group.pomodoroCount && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    🍅 {group.pomodoroCount}
+                  </span>
+                )}
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  ✓ {done}/{total}
+                </span>
+                {!isDaily && totalPomodoros > 0 && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    🍅 {totalPomodoros}/{totalPomodoroTarget}
+                  </span>
+                )}
+                {totalWork > 0 && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    ⏱ {Math.floor(totalWork / 3600)}h{Math.floor((totalWork % 3600) / 60).toString().padStart(2, '0')}m
+                  </span>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
