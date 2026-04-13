@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/lib/storage';
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2, Play, Pause, Timer, RotateCcw, Coffee, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2, Play, Pause, Timer, RotateCcw, Coffee, AlertTriangle, Copy } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -20,6 +20,7 @@ interface Props {
   tasks: Task[];
   onEditGroup: (id: string, updates: { name?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number }) => void;
   onDeleteGroup: (id: string) => void;
+  onDuplicateGroup?: (id: string) => void;
   onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
@@ -158,7 +159,7 @@ function DailyGroupPomodoroControls({
 }
 
 export function TaskGroupCard({
-  group, tasks, onEditGroup, onDeleteGroup, onAddSubtask,
+  group, tasks, onEditGroup, onDeleteGroup, onDuplicateGroup, onAddSubtask,
   onStatusChange, onDelete, onEdit,
   getPomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset,
   onStartBreak, onContinueNext, onFinishTask,
@@ -331,6 +332,12 @@ export function TaskGroupCard({
                       className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Pencil size={12} /> Editar
+                    </button>
+                    <button
+                      onClick={() => { onDuplicateGroup?.(group.id); setShowActions(false); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Copy size={12} /> Duplicar
                     </button>
                     <button
                       onClick={() => { onDeleteGroup(group.id); setShowActions(false); }}
