@@ -112,6 +112,42 @@ export function SystemRAM() {
     setNoteText('');
   };
 
+  const handleClearLogs = () => {
+    setLogs([]);
+    toast.success('Log limpiado');
+  };
+
+  const handleExportRAM = () => {
+    const data = { level, logs, customTriggers };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ram-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('RAM exportada');
+  };
+
+  const handleImportRAM = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (typeof data.level === 'number') setLevel(data.level);
+        if (Array.isArray(data.logs)) setLogs(data.logs);
+        if (Array.isArray(data.customTriggers)) setCustomTriggers(data.customTriggers);
+        toast.success('RAM importada correctamente');
+      } catch {
+        toast.error('Archivo JSON inválido');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div className="space-y-6 font-mono text-sm">
       {/* Header */}
