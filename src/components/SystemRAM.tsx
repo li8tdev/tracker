@@ -287,9 +287,36 @@ export function SystemRAM() {
 
       {/* Process Logs */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="text-muted-foreground text-xs">$ tail -f /var/log/ram.log</span>
           <span className="text-xs text-muted-foreground ml-auto">{logs.length} entries</span>
+          <div className="flex gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleClearLogs} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" disabled={logs.length === 0}>
+                  <Trash2 size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-mono text-xs">Limpiar log</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleExportRAM} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  <Download size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-mono text-xs">Exportar RAM (.json)</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  <Upload size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-mono text-xs">Importar RAM (.json)</TooltipContent>
+            </Tooltip>
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleImportRAM} className="hidden" />
+          </div>
         </div>
         <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
           {logs.length === 0 && (
