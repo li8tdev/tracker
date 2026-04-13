@@ -8,6 +8,9 @@ export interface Task {
   createdAt: string;
   completedAt?: string;
   startedAt?: string;
+  pomodoroCount: number; // how many pomodoros this task needs
+  pomodorosCompleted: number; // how many finished
+  overtimeSeconds: number; // extra time after all pomodoros done
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
@@ -15,7 +18,15 @@ const STORAGE_KEY = 'productivity-tracker-tasks';
 export function loadTasks(): Task[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    const tasks = JSON.parse(data);
+    // Migrate old tasks
+    return tasks.map((t: any) => ({
+      ...t,
+      pomodoroCount: t.pomodoroCount ?? 1,
+      pomodorosCompleted: t.pomodorosCompleted ?? 0,
+      overtimeSeconds: t.overtimeSeconds ?? 0,
+    }));
   } catch {
     return [];
   }
