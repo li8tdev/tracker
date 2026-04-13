@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskStatus } from '@/lib/storage';
-import { Circle, Clock, CheckCircle2, Trash2, Play, Pause, RotateCcw, Timer, Coffee, AlertTriangle, Pencil, Check, X, Minus, Plus, CalendarDays, MoreHorizontal, Repeat } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Trash2, Play, Pause, RotateCcw, Timer, Coffee, AlertTriangle, Pencil, Check, X, Minus, Plus, CalendarDays, MoreHorizontal, Repeat, Copy } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -20,7 +20,7 @@ interface Props {
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
   onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
-  pomodoroState?: PomodoroState;
+  onDuplicate?: (id: string) => void;
   onPomodoroStart?: (id: string) => void;
   onPomodoroStop?: (id: string) => void;
   onPomodoroReset?: (id: string) => void;
@@ -41,7 +41,7 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask }: Props) {
+export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask }: Props) {
   const config = statusConfig[task.status];
   const Icon = config.icon;
   const isInProgress = task.status === 'in_progress';
@@ -193,6 +193,12 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
             >
               <Pencil size={12} /> Editar
+            </button>
+            <button
+              onClick={() => { onDuplicate?.(task.id); setShowActions(false); }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Copy size={12} /> Duplicar
             </button>
             <button
               onClick={() => { onDelete(task.id); setShowActions(false); }}
