@@ -1,10 +1,11 @@
-import { Task } from '@/lib/storage';
+import { Task, TaskGroup } from '@/lib/storage';
 import { Calendar } from '@/components/ui/calendar';
 import { useState, useMemo } from 'react';
-import { Circle, Clock, CheckCircle2 } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Repeat } from 'lucide-react';
 
 interface Props {
   allTasks: Task[];
+  allGroups?: TaskGroup[];
 }
 
 const statusIcons: Record<string, typeof Circle> = {
@@ -28,11 +29,21 @@ const statusBg: Record<string, string> = {
 // Generate hour slots from 6am to 11pm
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6);
 
-export function CalendarView({ allTasks }: Props) {
+export function CalendarView({ allTasks, allGroups = [] }: Props) {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
 
   const selectedDateStr = selectedDay ? selectedDay.toISOString().split('T')[0] : '';
-  const dayTasks = useMemo(() => allTasks.filter(t => t.date === selectedDateStr), [allTasks, selectedDateStr]);
+  
+  // Include daily tasks on any selected date
+  const dayTasks = useMemo(() => {
+    const directTasks = allTasks.filter(t => t.date === selectedDateStr);
+    const dailyTasks = allTasks.filter(t => {
+      if (t.date === selectedDateStr) return false; // already included
+      const group = allGroups.find(g => g.id === t.groupId);
+      return t.isDaily || group?.isDaily;
+    });
+    return [...directTasks, ...dailyTasks];
+  }, [allTasks, allGroups, selectedDateStr]);
 
   const scheduledTasks = useMemo(() => dayTasks.filter(t => t.scheduledTime).sort((a, b) => (a.scheduledTime! > b.scheduledTime! ? 1 : -1)), [dayTasks]);
   const unscheduledTasks = useMemo(() => dayTasks.filter(t => !t.scheduledTime), [dayTasks]);
