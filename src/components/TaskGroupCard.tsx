@@ -334,6 +334,12 @@ export function TaskGroupCard({
                       <Pencil size={12} /> Editar
                     </button>
                     <button
+                      onClick={() => { onDuplicateGroup?.(group.id); setShowActions(false); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Copy size={12} /> Duplicar
+                    </button>
+                    <button
                       onClick={() => { onDeleteGroup(group.id); setShowActions(false); }}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     >
