@@ -26,6 +26,7 @@ interface Props {
   onPomodoroReset?: (id: string) => void;
   onStartBreak?: (id: string) => void;
   onContinueNext?: (id: string) => void;
+  onFinishTask?: (id: string) => void;
 }
 
 const statusConfig: Record<TaskStatus, { icon: typeof Circle; label: string; className: string; next: TaskStatus }> = {
@@ -40,7 +41,7 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext }: Props) {
+export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask }: Props) {
   const config = statusConfig[task.status];
   const Icon = config.icon;
   const isInProgress = task.status === 'in_progress';
