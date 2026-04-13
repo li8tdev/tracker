@@ -127,7 +127,7 @@ export function TaskGroupCard({
   };
 
   return (
-    <div className={`rounded-lg border transition-all overflow-hidden ${allDone ? 'border-success/30 bg-success/5 opacity-60' : 'border-accent/20 bg-accent/5'}`}>
+    <div className={`rounded-lg border transition-all overflow-hidden ${allDone ? 'border-success/30 bg-success/5 opacity-60' : inProgress && isDaily ? 'border-warning/30 bg-warning/5' : 'border-accent/20 bg-accent/5'}`}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-center gap-2 p-2.5">
           <CollapsibleTrigger asChild>
