@@ -118,6 +118,31 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Reset daily tasks to todo for the new day
+  const resetDailyTasks = useCallback((newDate: string) => {
+    setTasks(prev => prev.map(t => {
+      // If task is daily, or belongs to a daily group
+      const group = groups.find(g => g.id === t.groupId);
+      const isTaskDaily = t.isDaily || group?.isDaily;
+      if (!isTaskDaily) return t;
+      return {
+        ...t,
+        status: 'todo' as TaskStatus,
+        date: newDate,
+        completedAt: undefined,
+        startedAt: undefined,
+        pomodorosCompleted: 0,
+        overtimeSeconds: 0,
+        totalWorkSeconds: 0,
+      };
+    }));
+    // Reset daily groups
+    setGroups(prev => prev.map(g => {
+      if (!g.isDaily) return g;
+      return { ...g, date: newDate, completedAt: undefined };
+    }));
+  }, [groups]);
+
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayGroups = groups.filter(g => g.date === selectedDate);
   const allTasks = tasks;
@@ -126,6 +151,6 @@ export function useTasks() {
     tasks: dayTasks, allTasks, groups: dayGroups, allGroups: groups,
     addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks,
     incrementPomodoro, addOvertime, setTotalWork, editTask,
-    addGroup, editGroup, deleteGroup,
+    addGroup, editGroup, deleteGroup, resetDailyTasks,
   };
 }
