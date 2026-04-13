@@ -238,7 +238,7 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
         <Calendar
           mode="single"
           selected={selectedDay}
-          onSelect={setSelectedDay}
+          onSelect={handleDaySelect}
           className="p-3 pointer-events-auto"
           modifiers={modifiers}
           modifiersStyles={modifiersStyles}

@@ -730,7 +730,7 @@ const Index = () => {
             </div>
           </>
         ) : activeTab === 'calendar' ? (
-          <CalendarView allTasks={allTasks} allGroups={allGroups} />
+          <CalendarView allTasks={allTasks} allGroups={allGroups} selectedDate={selectedDate} onDateChange={setSelectedDate} />
         ) : (
           <div className="bg-card border border-border rounded-2xl p-6">
             <SystemRAM />
