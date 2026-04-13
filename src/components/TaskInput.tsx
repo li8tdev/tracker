@@ -25,7 +25,7 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
     if (!value.trim()) return;
     if (mode === 'group') {
       const dateStr = taskDate.toISOString().split('T')[0];
-      onAddGroup?.(value.trim(), dateStr, isDaily || undefined);
+      onAddGroup?.(value.trim(), dateStr);
       setValue('');
       setMode('task');
       setIsDaily(false);

@@ -122,10 +122,7 @@ export function useTasks() {
   // Reset daily tasks to todo for the new day
   const resetDailyTasks = useCallback((newDate: string) => {
     setTasks(prev => prev.map(t => {
-      // If task is daily, or belongs to a daily group
-      const group = groups.find(g => g.id === t.groupId);
-      const isTaskDaily = t.isDaily || group?.isDaily;
-      if (!isTaskDaily) return t;
+      if (!t.isDaily) return t;
       return {
         ...t,
         status: 'todo' as TaskStatus,
@@ -137,12 +134,7 @@ export function useTasks() {
         totalWorkSeconds: 0,
       };
     }));
-    // Reset daily groups
-    setGroups(prev => prev.map(g => {
-      if (!g.isDaily) return g;
-      return { ...g, date: newDate, completedAt: undefined };
-    }));
-  }, [groups]);
+  }, []);
 
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayGroups = groups.filter(g => g.date === selectedDate);
