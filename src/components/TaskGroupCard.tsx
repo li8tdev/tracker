@@ -59,6 +59,9 @@ export function TaskGroupCard({
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
+  const [editDaily, setEditDaily] = useState(!!group.isDaily);
+  const [editTime, setEditTime] = useState(group.scheduledTime || '');
+  const [editPomodoros, setEditPomodoros] = useState(group.pomodoroCount || 1);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newPomodoros, setNewPomodoros] = useState(1);
@@ -76,8 +79,22 @@ export function TaskGroupCard({
   const totalPomodoros = tasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
   const totalPomodoroTarget = tasks.reduce((s, t) => s + t.pomodoroCount, 0);
 
+  const startEditing = () => {
+    setEditName(group.name);
+    setEditDaily(!!group.isDaily);
+    setEditTime(group.scheduledTime || '');
+    setEditPomodoros(group.pomodoroCount || 1);
+    setEditing(true);
+    setShowActions(false);
+  };
+
   const saveEdit = () => {
-    onEditGroup(group.id, { name: editName.trim() || group.name });
+    onEditGroup(group.id, {
+      name: editName.trim() || group.name,
+      isDaily: editDaily || undefined,
+      scheduledTime: editDaily && editTime ? editTime : undefined,
+      pomodoroCount: editDaily ? editPomodoros : undefined,
+    });
     setEditing(false);
   };
 
@@ -111,76 +128,108 @@ export function TaskGroupCard({
           <FolderOpen size={14} className={allDone ? 'text-success' : 'text-accent'} />
 
           {editing ? (
-            <div className="flex-1 flex items-center gap-1.5 min-w-0">
-              <input
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                className="flex-1 min-w-0 bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
-                autoFocus
-                onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }}
-              />
-              <button onClick={saveEdit} className="w-5 h-5 flex items-center justify-center rounded text-success hover:bg-success/10 shrink-0"><Check size={11} /></button>
-              <button onClick={() => setEditing(false)} className="w-5 h-5 flex items-center justify-center rounded text-destructive hover:bg-destructive/10 shrink-0"><X size={11} /></button>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="flex-1 min-w-0 bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }}
+                />
+                <button onClick={saveEdit} className="w-5 h-5 flex items-center justify-center rounded text-success hover:bg-success/10 shrink-0"><Check size={11} /></button>
+                <button onClick={() => setEditing(false)} className="w-5 h-5 flex items-center justify-center rounded text-destructive hover:bg-destructive/10 shrink-0"><X size={11} /></button>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setEditDaily(d => !d)}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${editDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent'}`}
+                >
+                  <Repeat size={9} /> Diario
+                </button>
+                {editDaily && (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <Clock size={10} className="text-muted-foreground" />
+                      <input
+                        type="time"
+                        value={editTime}
+                        onChange={e => setEditTime(e.target.value)}
+                        className="bg-transparent border border-border rounded px-1 py-0.5 text-[10px] text-foreground focus:outline-none w-[4.5rem]"
+                      />
+                    </div>
+                    <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                      🍅
+                      <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
+                      <span className="w-3 text-center font-mono">{editPomodoros}</span>
+                      <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
-            <span className={`flex-1 text-[13px] font-semibold truncate ${allDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-              {group.name}
-            </span>
+            <>
+              <span className={`flex-1 text-[13px] font-semibold truncate ${allDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                {group.name}
+              </span>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isDaily && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                    <Repeat size={9} />
+                  </span>
+                )}
+                {isDaily && group.scheduledTime && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    <Clock size={9} className="inline mr-0.5" />
+                    {group.scheduledTime}
+                  </span>
+                )}
+                {isDaily && group.pomodoroCount && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    🍅 {group.pomodoroCount}
+                  </span>
+                )}
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {done}/{total}
+                </span>
+                {!isDaily && totalPomodoros > 0 && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    🍅 {totalPomodoros}/{totalPomodoroTarget}
+                  </span>
+                )}
+                {totalWork > 0 && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    ⏱ {Math.floor(totalWork / 3600)}h{Math.floor((totalWork % 3600) / 60).toString().padStart(2, '0')}m
+                  </span>
+                )}
+
+                <Popover open={showActions} onOpenChange={setShowActions}>
+                  <PopoverTrigger asChild>
+                    <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+                      <MoreHorizontal size={13} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-1 flex flex-wrap gap-0.5" align="end" sideOffset={4}>
+                    <button
+                      onClick={startEditing}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Pencil size={12} /> Editar
+                    </button>
+                    <button
+                      onClick={() => { onDeleteGroup(group.id); setShowActions(false); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 size={12} /> Eliminar
+                    </button>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </>
           )}
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {isDaily && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
-                <Repeat size={9} />
-              </span>
-            )}
-            {isDaily && group.scheduledTime && (
-              <span className="text-[10px] text-muted-foreground font-mono">
-                <Clock size={9} className="inline mr-0.5" />
-                {group.scheduledTime}
-              </span>
-            )}
-            {isDaily && group.pomodoroCount && (
-              <span className="text-[10px] text-muted-foreground font-mono">
-                🍅 {group.pomodoroCount}
-              </span>
-            )}
-            <span className="text-[10px] text-muted-foreground font-mono">
-              {done}/{total}
-            </span>
-            {!isDaily && totalPomodoros > 0 && (
-              <span className="text-[10px] text-muted-foreground font-mono">
-                🍅 {totalPomodoros}/{totalPomodoroTarget}
-              </span>
-            )}
-            {totalWork > 0 && (
-              <span className="text-[10px] text-muted-foreground font-mono">
-                ⏱ {Math.floor(totalWork / 3600)}h{Math.floor((totalWork % 3600) / 60).toString().padStart(2, '0')}m
-              </span>
-            )}
-
-            <Popover open={showActions} onOpenChange={setShowActions}>
-              <PopoverTrigger asChild>
-                <button className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
-                  <MoreHorizontal size={13} />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-1 flex flex-wrap gap-0.5" align="end" sideOffset={4}>
-                <button
-                  onClick={() => { setEditing(true); setEditName(group.name); setShowActions(false); }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Pencil size={12} /> Editar
-                </button>
-                <button
-                  onClick={() => { onDeleteGroup(group.id); setShowActions(false); }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 size={12} /> Eliminar
-                </button>
-              </PopoverContent>
-            </Popover>
-          </div>
         </div>
 
         {total > 0 && (
