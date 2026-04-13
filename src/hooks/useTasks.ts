@@ -25,7 +25,7 @@ export function useTasks() {
     return group.id;
   }, [selectedDate]);
 
-  const editGroup = useCallback((id: string, updates: { name?: string; date?: string }) => {
+  const editGroup = useCallback((id: string, updates: { name?: string; date?: string; isDaily?: boolean }) => {
     setGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
   }, []);
 
@@ -34,7 +34,7 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.groupId !== id));
   }, []);
 
-  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string, scheduledTime?: string, groupId?: string) => {
+  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string, scheduledTime?: string, groupId?: string, isDaily?: boolean) => {
     const task: Task = {
       id: generateId(),
       title,
@@ -47,6 +47,7 @@ export function useTasks() {
       overtimeSeconds: 0,
       totalWorkSeconds: 0,
       groupId,
+      isDaily,
     };
     setTasks(prev => [...prev, task]);
   }, [selectedDate]);
@@ -85,7 +86,7 @@ export function useTasks() {
     }
   }, [tasks, updateGroupCompletionFromTasks]);
 
-  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string }) => {
+  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string; isDaily?: boolean }) => {
     setTasks(prev => prev.map(t => {
       if (t.id !== id) return t;
       return { ...t, ...updates };

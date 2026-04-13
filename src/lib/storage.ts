@@ -14,6 +14,7 @@ export interface Task {
   overtimeSeconds: number;
   totalWorkSeconds: number; // actual focused work time (no breaks)
   groupId?: string; // belongs to a task group
+  isDaily?: boolean; // repeats every day
 }
 
 export interface TaskGroup {
@@ -22,6 +23,7 @@ export interface TaskGroup {
   date: string; // YYYY-MM-DD
   createdAt: string;
   completedAt?: string;
+  isDaily?: boolean; // all tasks in group repeat daily
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
