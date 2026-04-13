@@ -149,137 +149,119 @@ export function SystemRAM() {
   };
 
   return (
-    <div className="space-y-6 font-mono text-sm">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">$</span>
-        <span className="font-bold tracking-tight">system_ram --status</span>
-      </div>
-
-      {/* Gauge */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative w-36 h-36">
+    <div className="space-y-8 font-mono text-sm">
+      {/* Top section: Gauge + Level in a horizontal layout */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        {/* Gauge - compact */}
+        <div className="relative w-28 h-28 shrink-0">
           <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-            <circle cx="60" cy="60" r="54" fill="none" stroke="hsl(var(--border))" strokeWidth="8" opacity="0.3" />
+            <circle cx="60" cy="60" r="54" fill="none" stroke="hsl(var(--border))" strokeWidth="6" opacity="0.2" />
             <circle
               cx="60" cy="60" r="54" fill="none"
-              stroke={ring} strokeWidth="8" strokeLinecap="round"
+              stroke={ring} strokeWidth="6" strokeLinecap="round"
               strokeDasharray={circumference} strokeDashoffset={offset}
-              className="transition-all duration-500"
+              className="transition-all duration-700 ease-out"
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold" style={{ color: ring }}>{pct}%</span>
-            <span className="text-[10px] text-muted-foreground">RAM LOAD</span>
+            <span className="text-xl font-bold tabular-nums" style={{ color: ring }}>{level}</span>
+            <span className="text-[9px] text-muted-foreground tracking-wider uppercase">/10</span>
           </div>
         </div>
-        <div className="text-center">
-          <span className="text-xs px-3 py-1 rounded-full border" style={{ borderColor: ring, color: labelColor, backgroundColor: bg }}>
-            {label}
-          </span>
-        </div>
-      </div>
 
-      {/* Triggers */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-muted-foreground text-xs">$ select_trigger</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {allTriggers.map((t) => {
-            const isCustom = customTriggers.some(ct => ct.label === t.label);
-            return (
-              <Tooltip key={t.label}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setSelectedTrigger(prev => prev === t.label ? '' : t.label)}
-                    className={`relative group text-xs px-3 py-1.5 rounded-full border transition-all duration-200 ${
-                      selectedTrigger === t.label
-                        ? 'border-foreground bg-foreground/10 text-foreground'
-                        : 'border-border text-muted-foreground hover:border-foreground/50 hover:text-foreground'
-                    }`}
-                  >
-                    {t.label}
-                    {isCustom && (
-                      <span
-                        onClick={(e) => { e.stopPropagation(); handleRemoveCustomTrigger(t.label); }}
-                        className="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity inline-flex"
-                      >
-                        <X size={10} />
-                      </span>
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs font-mono text-xs bg-popover border-border">
-                  <span className="text-muted-foreground">DEBUG: </span>{t.debug}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
+        {/* Right side: Status + Level buttons */}
+        <div className="flex-1 w-full space-y-4">
+          {/* Status label */}
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ring }} />
+            <span className="text-xs text-muted-foreground">{label}</span>
+          </div>
 
-          {addingTrigger ? (
-            <div className="flex items-center gap-1">
-              <input
-                autoFocus
-                value={newTriggerLabel}
-                onChange={e => setNewTriggerLabel(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddCustomTrigger(); if (e.key === 'Escape') setAddingTrigger(false); }}
-                placeholder="Nuevo trigger..."
-                className="text-xs px-3 py-1.5 rounded-full border border-border bg-transparent text-foreground outline-none focus:border-foreground/50 w-40"
-              />
-              <button onClick={handleAddCustomTrigger} className="text-xs text-muted-foreground hover:text-foreground">OK</button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setAddingTrigger(true)}
-              className="text-xs px-3 py-1.5 rounded-full border border-dashed border-border text-muted-foreground hover:border-foreground/50 hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Plus size={12} /> Add Trigger
-            </button>
-          )}
-        </div>
-      </div>
+          {/* Level selector - minimal pills */}
+          <div className="grid grid-cols-10 gap-1">
+            {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
+              const isSelected = level === n;
+              return (
+                <button
+                  key={n}
+                  onClick={() => handleLevelSelect(n)}
+                  className={`py-1.5 rounded-md text-[11px] font-semibold transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-foreground text-background shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Level selector */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-muted-foreground text-xs">$ set_level [1-10]</span>
-        </div>
-        <div className="flex gap-1.5">
-          {Array.from({ length: 10 }, (_, i) => i + 1).map(n => {
-            const nPct = n * 10;
-            const c = getColor(nPct);
-            return (
+          {/* Triggers inline */}
+          <div className="flex flex-wrap gap-1.5">
+            {allTriggers.map((t) => {
+              const isCustom = customTriggers.some(ct => ct.label === t.label);
+              const isActive = selectedTrigger === t.label;
+              return (
+                <Tooltip key={t.label}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setSelectedTrigger(prev => prev === t.label ? '' : t.label)}
+                      className={`relative group text-[11px] px-2.5 py-1 rounded-md transition-all duration-200 ${
+                        isActive
+                          ? 'bg-foreground text-background'
+                          : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      }`}
+                    >
+                      {t.label}
+                      {isCustom && (
+                        <span
+                          onClick={(e) => { e.stopPropagation(); handleRemoveCustomTrigger(t.label); }}
+                          className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline-flex"
+                        >
+                          <X size={9} />
+                        </span>
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs font-mono text-xs bg-popover border-border">
+                    <span className="text-muted-foreground">DEBUG: </span>{t.debug}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+
+            {addingTrigger ? (
+              <div className="flex items-center gap-1">
+                <input
+                  autoFocus
+                  value={newTriggerLabel}
+                  onChange={e => setNewTriggerLabel(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddCustomTrigger(); if (e.key === 'Escape') setAddingTrigger(false); }}
+                  placeholder="trigger..."
+                  className="text-[11px] px-2.5 py-1 rounded-md border border-border bg-transparent text-foreground outline-none focus:border-foreground/40 w-32"
+                />
+              </div>
+            ) : (
               <button
-                key={n}
-                onClick={() => handleLevelSelect(n)}
-                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 border ${
-                  level === n
-                    ? 'scale-105 shadow-md'
-                    : 'opacity-60 hover:opacity-100'
-                }`}
-                style={{
-                  borderColor: level === n ? c.ring : 'hsl(var(--border))',
-                  backgroundColor: level === n ? c.bg : 'transparent',
-                  color: c.ring,
-                }}
+                onClick={() => setAddingTrigger(true)}
+                className="text-[11px] px-2.5 py-1 rounded-md border border-dashed border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground transition-colors flex items-center gap-1"
               >
-                {n}
+                <Plus size={10} /> custom
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
       </div>
 
       {/* Emergency protocol */}
       {level > 7 && (
-        <div className="border border-destructive/50 bg-destructive/5 rounded-xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-          <AlertTriangle size={18} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-xs font-bold text-destructive">⚠ PROTOCOLO 20 MIN ACTIVADO</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Exhala en 8, inhala en 4. Estás cuerdo, es solo química.<br />
-              Tu sistema nervioso está respondiendo a una percepción, no a un hecho.
+        <div className="border border-destructive/30 bg-destructive/5 rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <AlertTriangle size={14} className="text-destructive mt-0.5 shrink-0" />
+          <div className="space-y-0.5">
+            <p className="text-[11px] font-bold text-destructive">PROTOCOLO 20 MIN</p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Exhala 8s, inhala 4s. Es química, no realidad.
             </p>
           </div>
         </div>
