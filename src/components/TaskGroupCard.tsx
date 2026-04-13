@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/lib/storage';
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Repeat, Minus } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TaskCard, PomodoroPhase } from '@/components/TaskCard';
@@ -15,12 +15,12 @@ interface PomodoroState {
 interface Props {
   group: TaskGroup;
   tasks: Task[];
-  onEditGroup: (id: string, updates: { name?: string }) => void;
+  onEditGroup: (id: string, updates: { name?: string; isDaily?: boolean }) => void;
   onDeleteGroup: (id: string) => void;
   onAddSubtask: (title: string, pomodoroCount: number, groupId: string) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
-  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string }) => void;
+  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
   getPomodoroState?: (taskId: string) => PomodoroState | undefined;
   onPomodoroStart?: (id: string) => void;
   onPomodoroStop?: (id: string) => void;
@@ -65,8 +65,12 @@ export function TaskGroupCard({
     setAdding(false);
   };
 
+  const toggleDaily = () => {
+    onEditGroup(group.id, { isDaily: !group.isDaily });
+  };
+
   return (
-    <div className={`rounded-lg border transition-all ${allDone ? 'border-success/30 bg-success/5 opacity-60' : 'border-accent/20 bg-accent/5'}`}>
+    <div className={`rounded-lg border transition-all overflow-hidden ${allDone ? 'border-success/30 bg-success/5 opacity-60' : 'border-accent/20 bg-accent/5'}`}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-center gap-2 p-2.5">
           <CollapsibleTrigger asChild>
@@ -78,16 +82,16 @@ export function TaskGroupCard({
           <FolderOpen size={14} className={allDone ? 'text-success' : 'text-accent'} />
 
           {editing ? (
-            <div className="flex-1 flex items-center gap-1.5">
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
+                className="flex-1 min-w-0 bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
                 autoFocus
                 onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false); }}
               />
-              <button onClick={saveEdit} className="w-5 h-5 flex items-center justify-center rounded text-success hover:bg-success/10"><Check size={11} /></button>
-              <button onClick={() => setEditing(false)} className="w-5 h-5 flex items-center justify-center rounded text-destructive hover:bg-destructive/10"><X size={11} /></button>
+              <button onClick={saveEdit} className="w-5 h-5 flex items-center justify-center rounded text-success hover:bg-success/10 shrink-0"><Check size={11} /></button>
+              <button onClick={() => setEditing(false)} className="w-5 h-5 flex items-center justify-center rounded text-destructive hover:bg-destructive/10 shrink-0"><X size={11} /></button>
             </div>
           ) : (
             <span className={`flex-1 text-[13px] font-semibold truncate ${allDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
@@ -96,6 +100,11 @@ export function TaskGroupCard({
           )}
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {group.isDaily && (
+              <span className="text-[10px] text-accent flex items-center gap-0.5">
+                <Repeat size={9} />
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground font-mono">
               {done}/{total}
             </span>
@@ -116,12 +125,18 @@ export function TaskGroupCard({
                   <MoreHorizontal size={13} />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-1 flex gap-0.5" align="end" sideOffset={4}>
+              <PopoverContent className="w-auto p-1 flex flex-wrap gap-0.5" align="end" sideOffset={4}>
                 <button
                   onClick={() => { setEditing(true); setEditName(group.name); setShowActions(false); }}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Pencil size={12} /> Editar
+                </button>
+                <button
+                  onClick={() => { toggleDaily(); setShowActions(false); }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors ${group.isDaily ? 'bg-accent/15 text-accent' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                >
+                  <Repeat size={12} /> {group.isDaily ? 'Quitar diario' : 'Diario'}
                 </button>
                 <button
                   onClick={() => { onDeleteGroup(group.id); setShowActions(false); }}
@@ -169,21 +184,24 @@ export function TaskGroupCard({
             })}
 
             {adding ? (
-              <form onSubmit={handleAddSubtask} className="flex items-center gap-1.5 p-2 ml-4">
+              <form onSubmit={handleAddSubtask} className="flex flex-wrap items-center gap-1.5 p-2 ml-4">
                 <input
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
                   placeholder="Subtarea..."
-                  className="flex-1 bg-background border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  className="flex-1 min-w-0 bg-background border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
                   autoFocus
                 />
-                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                  🍅 {newPomodoros}
-                  <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="px-1 hover:bg-secondary rounded">+</button>
-                  <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="px-1 hover:bg-secondary rounded">-</button>
+                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                  🍅
+                  <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
+                  <span className="w-3 text-center">{newPomodoros}</span>
+                  <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
                 </div>
-                <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
-                <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
+                <div className="flex gap-1 shrink-0">
+                  <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
+                  <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
+                </div>
               </form>
             ) : (
               <button

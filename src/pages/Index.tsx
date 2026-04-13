@@ -50,7 +50,7 @@ function getTaskIdFromTimerId(timerId: string) {
 }
 
 const Index = () => {
-  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup } = useTasks();
+  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar' | 'ram'>('tasks');
@@ -369,8 +369,13 @@ const Index = () => {
     clearTimerState(WORKANA_TIMER_ID);
     workanaInitialized.current = false;
     setPomodoroMeta(nextPomodoroMeta);
+    // Reset daily tasks to pending for tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    resetDailyTasks(tomorrowStr);
     session.endDay();
-  }, [allTasks, getRemainingForTimer, overtimeCounters, pomodoroMeta, remove, session.endDay, stop]);
+  }, [allTasks, getRemainingForTimer, overtimeCounters, pomodoroMeta, remove, session.endDay, stop, resetDailyTasks]);
 
   const handleStartDay = () => {
     session.startDay();
