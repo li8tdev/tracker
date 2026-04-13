@@ -100,6 +100,31 @@ const Index = () => {
 
   useEffect(() => { requestNotificationPermission(); }, []);
 
+  // Update browser tab title with active timer
+  useEffect(() => {
+    const activeTask = tasks.find(t => t.status === 'in_progress' && pomodoroMeta[t.id]?.phase === 'working');
+    if (activeTask) {
+      const secs = timers[`pomo-${activeTask.id}`];
+      if (secs !== undefined) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        document.title = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - ${activeTask.title}`;
+        return;
+      }
+    }
+    const breakingTask = tasks.find(t => t.status === 'in_progress' && pomodoroMeta[t.id]?.phase === 'breaking');
+    if (breakingTask) {
+      const secs = timers[`pomo-${breakingTask.id}`];
+      if (secs !== undefined) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        document.title = `☕ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - Descanso`;
+        return;
+      }
+    }
+    document.title = 'Tracker';
+  }, [timers, tasks, pomodoroMeta]);
+
   useEffect(() => {
     if (session.active && !workanaInitialized.current) {
       workanaInitialized.current = true;
