@@ -14,6 +14,7 @@ import {
 } from '@/lib/timerPersistence';
 import { TaskInput } from '@/components/TaskInput';
 import { TaskCard, PomodoroPhase } from '@/components/TaskCard';
+import { TaskGroupCard } from '@/components/TaskGroupCard';
 import { StatsCard } from '@/components/StatsCard';
 import { Analytics } from '@/components/Analytics';
 import { CalendarView } from '@/components/CalendarView';
