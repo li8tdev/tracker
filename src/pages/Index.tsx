@@ -473,6 +473,12 @@ const Index = () => {
     return <StartDayScreen onStart={handleStartDay} />;
   }
 
+  const handleAddSubtask = (title: string, pomodoroCount: number, groupId: string) => {
+    addTask(title, pomodoroCount, selectedDate, undefined, groupId);
+  };
+
+  const getGroupTasks = (groupId: string) => tasks.filter(t => t.groupId === groupId);
+
   const ungroupedTasks = tasks.filter(t => !t.groupId);
   const todo = ungroupedTasks.filter(t => t.status === 'todo');
   const inProgress = ungroupedTasks.filter(t => t.status === 'in_progress');
