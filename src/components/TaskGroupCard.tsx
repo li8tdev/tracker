@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/lib/storage';
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2, Play, Pause } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2, Play, Pause, Timer, RotateCcw, Coffee, AlertTriangle } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,6 +33,12 @@ interface Props {
   onFinishTask?: (id: string) => void;
 }
 
+function formatTime(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
 function SimpleSubtask({ task, onStatusChange }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void }) {
   const isDone = task.status === 'done';
   return (
@@ -46,6 +52,107 @@ function SimpleSubtask({ task, onStatusChange }: { task: Task; onStatusChange: (
       <span className={`text-[12px] ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
         {task.title}
       </span>
+    </div>
+  );
+}
+
+function DailyGroupPomodoroControls({
+  group, pomState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask,
+}: {
+  group: TaskGroup;
+  pomState: PomodoroState;
+  onPomodoroStart?: (id: string) => void;
+  onPomodoroStop?: (id: string) => void;
+  onPomodoroReset?: (id: string) => void;
+  onStartBreak?: (id: string) => void;
+  onContinueNext?: (id: string) => void;
+  onFinishTask?: (id: string) => void;
+}) {
+  const phase = pomState.phase;
+  const pomCount = group.pomodoroCount ?? 1;
+
+  if (phase === 'idle') return null;
+
+  return (
+    <div className="px-2.5 pb-2 space-y-1.5">
+      {(phase === 'working' || phase === 'paused') && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 bg-accent/5 border border-accent/15 rounded-md px-2 py-1">
+            <Timer size={11} className="text-accent" />
+            <span className="font-mono text-[11px] font-semibold text-accent tabular-nums">
+              {formatTime(pomState.remainingSeconds)}
+            </span>
+          </div>
+          <span className="text-[10px] text-muted-foreground">
+            {pomState.currentPomodoro}/{pomCount}
+          </span>
+          <div className="flex gap-0.5 ml-auto">
+            {phase === 'working' ? (
+              <button onClick={() => onPomodoroStop?.(group.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-accent/10 text-accent transition-colors" title="Pausar"><Pause size={11} /></button>
+            ) : (
+              <button onClick={() => onPomodoroStart?.(group.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-accent/10 text-accent transition-colors" title="Reanudar"><Play size={11} /></button>
+            )}
+            <button onClick={() => onPomodoroReset?.(group.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground transition-colors" title="Reiniciar"><RotateCcw size={11} /></button>
+            <button onClick={() => onFinishTask?.(group.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-success/10 text-success transition-colors" title="Terminar"><CheckCircle2 size={11} /></button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'break_pending' && (
+        <div className="bg-accent/5 border border-accent/15 rounded-md p-2.5 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-accent">
+            <Coffee size={12} />
+            <span className="text-[11px] font-semibold">¡Hora de descansar!</span>
+          </div>
+          {pomState.restMessage && (
+            <p className="text-[10px] text-muted-foreground leading-relaxed">{pomState.restMessage}</p>
+          )}
+          <button onClick={() => onStartBreak?.(group.id)} className="w-full text-[11px] bg-accent text-accent-foreground px-2.5 py-1 rounded-md font-medium hover:opacity-90 transition-opacity">
+            Descanso (10 min)
+          </button>
+        </div>
+      )}
+
+      {phase === 'breaking' && (
+        <div className="flex items-center gap-1.5 bg-success/5 border border-success/15 rounded-md px-2 py-1">
+          <Coffee size={11} className="text-success" />
+          <span className="font-mono text-[11px] font-semibold text-success tabular-nums">{formatTime(pomState.remainingSeconds)}</span>
+          <span className="text-[10px] text-muted-foreground">Descanso</span>
+        </div>
+      )}
+
+      {phase === 'next_pending' && (
+        <div className="bg-success/5 border border-success/15 rounded-md p-2.5 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-success">
+            <Play size={12} />
+            <span className="text-[11px] font-semibold">¡Listo para continuar!</span>
+          </div>
+          <button onClick={() => onContinueNext?.(group.id)} className="w-full text-[11px] bg-foreground text-background px-2.5 py-1 rounded-md font-medium hover:opacity-90 transition-opacity">
+            Pomodoro {(pomState.currentPomodoro ?? 1) + 1}/{pomCount}
+          </button>
+        </div>
+      )}
+
+      {(phase === 'all_done' || phase === 'overtime') && (
+        <div className="bg-destructive/5 border border-destructive/15 rounded-md p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-destructive">
+              <AlertTriangle size={12} />
+              <span className="text-[11px] font-semibold">¡Pomodoros completados!</span>
+            </div>
+            <button onClick={() => onFinishTask?.(group.id)} className="w-7 h-7 flex items-center justify-center rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors" title="Terminar">
+              <CheckCircle2 size={14} />
+            </button>
+          </div>
+          {phase === 'overtime' && (
+            <div className="flex items-center gap-1.5">
+              <Timer size={10} className="text-destructive" />
+              <span className="font-mono text-[11px] font-semibold text-destructive tabular-nums">+{formatTime(pomState.remainingSeconds)}</span>
+              <span className="text-[10px] text-muted-foreground">extra</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -73,22 +180,16 @@ export function TaskGroupCard({
 
   const isDaily = !!group.isDaily;
   const done = tasks.filter(t => t.status === 'done').length;
-  const inProgress = tasks.some(t => t.status === 'in_progress');
   const total = tasks.length;
   const allDone = total > 0 && done === total;
   const totalWork = tasks.reduce((s, t) => s + (t.totalWorkSeconds ?? 0), 0);
-
-  const toggleDailyProgress = () => {
-    if (inProgress) {
-      // Pause: set in_progress tasks back to todo
-      tasks.filter(t => t.status === 'in_progress').forEach(t => onStatusChange(t.id, 'todo'));
-    } else {
-      // Play: set all non-done tasks to in_progress
-      tasks.filter(t => t.status === 'todo').forEach(t => onStatusChange(t.id, 'in_progress'));
-    }
-  };
   const totalPomodoros = tasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
   const totalPomodoroTarget = tasks.reduce((s, t) => s + t.pomodoroCount, 0);
+
+  // Pomodoro state for daily groups (uses group.id as timer key)
+  const groupPomState = isDaily ? getPomodoroState?.(group.id) : undefined;
+  const groupPhase = groupPomState?.phase ?? 'idle';
+  const isGroupActive = groupPhase === 'working' || groupPhase === 'paused' || groupPhase === 'breaking' || groupPhase === 'break_pending' || groupPhase === 'next_pending' || groupPhase === 'overtime' || groupPhase === 'all_done';
 
   const startEditing = () => {
     setEditName(group.name);
@@ -113,7 +214,6 @@ export function TaskGroupCard({
     e.preventDefault();
     if (!newTitle.trim()) return;
     if (isDaily) {
-      // Daily group subtasks: simple, no pomodoro/date/time
       onAddSubtask(newTitle.trim(), 1, group.id, group.date, undefined, undefined);
     } else {
       const dateStr = newDate.toISOString().split('T')[0];
@@ -126,8 +226,22 @@ export function TaskGroupCard({
     setAdding(false);
   };
 
+  const handlePlayPause = () => {
+    if (groupPhase === 'working') {
+      onPomodoroStop?.(group.id);
+    } else {
+      onPomodoroStart?.(group.id);
+    }
+  };
+
+  const borderClass = allDone
+    ? 'border-success/30 bg-success/5 opacity-60'
+    : isGroupActive && isDaily
+      ? 'border-warning/30 bg-warning/5'
+      : 'border-accent/20 bg-accent/5';
+
   return (
-    <div className={`rounded-lg border transition-all overflow-hidden ${allDone ? 'border-success/30 bg-success/5 opacity-60' : inProgress && isDaily ? 'border-warning/30 bg-warning/5' : 'border-accent/20 bg-accent/5'}`}>
+    <div className={`rounded-lg border transition-all overflow-hidden ${borderClass}`}>
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-center gap-2 p-2.5">
           <CollapsibleTrigger asChild>
@@ -136,19 +250,20 @@ export function TaskGroupCard({
             </button>
           </CollapsibleTrigger>
 
-          <FolderOpen size={14} className={allDone ? 'text-success' : inProgress ? 'text-warning' : 'text-accent'} />
+          <FolderOpen size={14} className={allDone ? 'text-success' : isGroupActive ? 'text-warning' : 'text-accent'} />
 
-          {isDaily && !editing && !allDone && (
+          {/* Play/Pause for daily groups */}
+          {isDaily && !editing && !allDone && (groupPhase === 'idle' || groupPhase === 'working' || groupPhase === 'paused') && (
             <button
-              onClick={toggleDailyProgress}
+              onClick={handlePlayPause}
               className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full transition-all ${
-                inProgress
+                groupPhase === 'working'
                   ? 'bg-warning/15 text-warning hover:bg-warning/25'
                   : 'bg-accent/10 text-accent hover:bg-accent/20'
               }`}
-              title={inProgress ? 'Pausar grupo' : 'Iniciar grupo'}
+              title={groupPhase === 'working' ? 'Pausar' : 'Iniciar'}
             >
-              {inProgress ? <Pause size={11} /> : <Play size={11} />}
+              {groupPhase === 'working' ? <Pause size={11} /> : <Play size={11} />}
             </button>
           )}
 
@@ -200,7 +315,7 @@ export function TaskGroupCard({
                 {group.name}
               </span>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                 {isDaily && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
                     <Repeat size={9} />
@@ -257,28 +372,41 @@ export function TaskGroupCard({
           )}
         </div>
 
+        {/* Progress bar */}
         {total > 0 && (
           <div className="px-2.5 pb-1">
             <div className="w-full h-1 rounded-full bg-secondary overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${allDone ? 'bg-success' : 'bg-accent'}`}
+                className={`h-full rounded-full transition-all ${allDone ? 'bg-success' : isGroupActive ? 'bg-warning' : 'bg-accent'}`}
                 style={{ width: `${(done / total) * 100}%` }}
               />
             </div>
           </div>
         )}
 
+        {/* Pomodoro controls for daily groups */}
+        {isDaily && groupPomState && groupPhase !== 'idle' && (
+          <DailyGroupPomodoroControls
+            group={group}
+            pomState={groupPomState}
+            onPomodoroStart={onPomodoroStart}
+            onPomodoroStop={onPomodoroStop}
+            onPomodoroReset={onPomodoroReset}
+            onStartBreak={onStartBreak}
+            onContinueNext={onContinueNext}
+            onFinishTask={onFinishTask}
+          />
+        )}
+
         <CollapsibleContent>
           <div className="px-2 pb-2 space-y-0.5">
             {isDaily ? (
-              // Daily group: simple subtask checkboxes
               <>
                 {tasks.map(t => (
                   <SimpleSubtask key={t.id} task={t} onStatusChange={onStatusChange} />
                 ))}
               </>
             ) : (
-              // Project group: full-featured subtask cards
               tasks.map(t => {
                 const pomState = getPomodoroState?.(t.id);
                 return (
@@ -301,7 +429,7 @@ export function TaskGroupCard({
             )}
 
             {adding ? (
-              <form onSubmit={handleAddSubtask} className="p-2 ml-4 space-y-2">
+              <form onSubmit={handleAddSubtask} className="p-2 ml-2 space-y-2">
                 <input
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
@@ -310,13 +438,11 @@ export function TaskGroupCard({
                   autoFocus
                 />
                 {isDaily ? (
-                  // Daily group: just confirm/cancel
                   <div className="flex gap-1 justify-end">
                     <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
                     <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
                   </div>
                 ) : (
-                  // Project group: full controls
                   <div className="flex flex-wrap items-center gap-1.5">
                     <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
                       🍅
@@ -362,7 +488,7 @@ export function TaskGroupCard({
             ) : (
               <button
                 onClick={() => setAdding(true)}
-                className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1.5 ml-4 rounded-md hover:bg-secondary/50 transition-colors w-full"
+                className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1.5 ml-2 rounded-md hover:bg-secondary/50 transition-colors w-full"
               >
                 <Plus size={11} /> Agregar subtarea
               </button>

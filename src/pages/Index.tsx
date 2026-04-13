@@ -129,25 +129,34 @@ const Index = () => {
       const taskId = id.replace('pomo-', '');
       const meta = pomodoroMeta[taskId];
       const task = allTasks.find(t => t.id === taskId);
-      if (!task) return;
+      const group = !task ? allGroups.find(g => g.id === taskId) : undefined;
+      if (!task && !group) return;
 
-      incrementPomodoro(taskId);
-      const newCompleted = (task.pomodorosCompleted ?? 0) + 1;
+      const pomCount = task?.pomodoroCount ?? group?.pomodoroCount ?? 1;
+      let newCompleted: number;
+
+      if (task) {
+        incrementPomodoro(taskId);
+        newCompleted = (task.pomodorosCompleted ?? 0) + 1;
+      } else {
+        newCompleted = meta?.currentPomodoro ?? 1;
+      }
       clearTimerState(id);
 
-      if (newCompleted >= task.pomodoroCount) {
-        sendNotification('🎉 ¡Todos los pomodoros completados!', `Tarea: ${task.title}. ¡Puedes marcarla como completada!`);
-        toast.success('🎉 ¡Todos los pomodoros completados!', { description: `${task.title}` });
+      const title = task?.title ?? group?.name ?? '';
+      if (newCompleted >= pomCount) {
+        sendNotification('🎉 ¡Todos los pomodoros completados!', `Tarea: ${title}. ¡Puedes marcarla como completada!`);
+        toast.success('🎉 ¡Todos los pomodoros completados!', { description: title });
         setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'all_done', currentPomodoro: newCompleted } }));
         startOvertime(taskId);
       } else {
         const msg = getRandomRestMessage();
-        sendNotification('🍅 ¡Pomodoro completado!', `${task.title}. ¡Toma un descanso!`);
+        sendNotification('🍅 ¡Pomodoro completado!', `${title}. ¡Toma un descanso!`);
         toast.success('🍅 ¡Pomodoro completado!', { description: msg });
         setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'break_pending', restMessage: msg, currentPomodoro: newCompleted } }));
       }
     }
-  }, [allTasks, pomodoroMeta, incrementPomodoro]);
+  }, [allTasks, allGroups, pomodoroMeta, incrementPomodoro, startOvertime]);
 
   const { timers, start, stop, remove, restore } = useTimer(handleTimerDone);
 
@@ -387,6 +396,7 @@ const Index = () => {
   const handlePomodoroStart = useCallback((taskId: string) => {
     const meta = pomodoroMeta[taskId];
     const task = allTasks.find(candidate => candidate.id === taskId);
+    const group = !task ? allGroups.find(g => g.id === taskId) : undefined;
     const currentPomodoro = meta?.currentPomodoro ?? Math.max(1, (task?.pomodorosCompleted ?? 0) + 1);
     const duration = meta?.phase === 'paused'
       ? Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION)
@@ -402,7 +412,7 @@ const Index = () => {
         restMessage: prev[taskId]?.restMessage,
       },
     }));
-  }, [allTasks, getRemainingForTimer, pomodoroMeta, start]);
+  }, [allTasks, allGroups, getRemainingForTimer, pomodoroMeta, start]);
 
   const handlePomodoroStop = useCallback((taskId: string) => {
     const remaining = Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION);
@@ -434,6 +444,37 @@ const Index = () => {
   // Finish task
   const handleFinishTask = useCallback((taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
+    const group = !task ? groups.find(g => g.id === taskId) : undefined;
+
+    if (group) {
+      // Finish daily group - mark all subtasks as done
+      const groupTasks = tasks.filter(t => t.groupId === group.id);
+      const meta = pomodoroMeta[taskId];
+      const pomCount = group.pomodoroCount ?? 1;
+      let workSeconds = (meta?.currentPomodoro ?? 0) * POMODORO_DURATION;
+      const timerVal = getRemainingForTimer(`pomo-${taskId}`);
+      if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
+        workSeconds += POMODORO_DURATION - timerVal;
+      }
+      workSeconds += overtimeCounters[taskId] ?? 0;
+
+      // Distribute work time across subtasks
+      if (groupTasks.length > 0) {
+        const perTask = Math.floor(workSeconds / groupTasks.length);
+        groupTasks.forEach(t => {
+          setTotalWork(t.id, perTask);
+          if (t.status !== 'done') updateStatus(t.id, 'done');
+        });
+      }
+
+      stopOvertime(taskId);
+      remove(`pomo-${taskId}`);
+      clearTimerState(`pomo-${taskId}`);
+      setPomodoroMeta(prev => { const n = { ...prev }; delete n[taskId]; return n; });
+      toast.success('✅ ¡Grupo terminado!', { description: `Tiempo: ${Math.floor(workSeconds / 3600)}h ${Math.floor((workSeconds % 3600) / 60)}m` });
+      return;
+    }
+
     if (!task) return;
     const meta = pomodoroMeta[taskId];
     const timerVal = getRemainingForTimer(`pomo-${taskId}`);
@@ -452,7 +493,7 @@ const Index = () => {
     setPomodoroMeta(prev => { const n = { ...prev }; delete n[taskId]; return n; });
     updateStatus(taskId, 'done');
     toast.success('✅ ¡Tarea terminada!', { description: `Tiempo de trabajo: ${Math.floor(workSeconds / 3600)}h ${Math.floor((workSeconds % 3600) / 60)}m` });
-  }, [tasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
+  }, [tasks, groups, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
 
   const handleStatusChange = useCallback((id: string, status: string) => {
     if (status === 'done') {
