@@ -121,6 +121,55 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const duplicateTask = useCallback((id: string) => {
+    setTasks(prev => {
+      const original = prev.find(t => t.id === id);
+      if (!original) return prev;
+      const copy: Task = {
+        ...original,
+        id: generateId(),
+        status: 'todo',
+        createdAt: new Date().toISOString(),
+        completedAt: undefined,
+        startedAt: undefined,
+        pomodorosCompleted: 0,
+        overtimeSeconds: 0,
+        totalWorkSeconds: 0,
+      };
+      return [...prev, copy];
+    });
+  }, []);
+
+  const duplicateGroup = useCallback((id: string) => {
+    const originalGroup = groups.find(g => g.id === id);
+    if (!originalGroup) return;
+    const newGroupId = generateId();
+    const newGroup: TaskGroup = {
+      ...originalGroup,
+      id: newGroupId,
+      createdAt: new Date().toISOString(),
+      completedAt: undefined,
+    };
+    setGroups(prev => [...prev, newGroup]);
+    // Duplicate all tasks belonging to this group
+    setTasks(prev => {
+      const groupTasks = prev.filter(t => t.groupId === id);
+      const copies = groupTasks.map(t => ({
+        ...t,
+        id: generateId(),
+        groupId: newGroupId,
+        status: 'todo' as TaskStatus,
+        createdAt: new Date().toISOString(),
+        completedAt: undefined,
+        startedAt: undefined,
+        pomodorosCompleted: 0,
+        overtimeSeconds: 0,
+        totalWorkSeconds: 0,
+      }));
+      return [...prev, ...copies];
+    });
+  }, [groups]);
+
   // Reset daily tasks to todo for the new day
   const resetDailyTasks = useCallback((newDate: string) => {
     // Reset individual daily tasks
@@ -152,7 +201,7 @@ export function useTasks() {
 
   return {
     tasks: dayTasks, allTasks, groups: dayGroups, allGroups: groups,
-    addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks,
+    addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks,
     incrementPomodoro, addOvertime, setTotalWork, editTask,
     addGroup, editGroup, deleteGroup, resetDailyTasks,
   };
