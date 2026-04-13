@@ -449,12 +449,12 @@ const Index = () => {
 
   // Finish task
   const handleFinishTask = useCallback((taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = allTasks.find(t => t.id === taskId);
     const group = !task ? groups.find(g => g.id === taskId) : undefined;
 
     if (group) {
       // Finish daily group - mark all subtasks as done
-      const groupTasks = tasks.filter(t => t.groupId === group.id);
+      const groupTasks = allTasks.filter(t => t.groupId === group.id);
       const meta = pomodoroMeta[taskId];
       const pomCount = group.pomodoroCount ?? 1;
       let workSeconds = (meta?.currentPomodoro ?? 0) * POMODORO_DURATION;
@@ -463,6 +463,11 @@ const Index = () => {
         workSeconds += POMODORO_DURATION - timerVal;
       }
       workSeconds += overtimeCounters[taskId] ?? 0;
+
+      // If no timer was used at all, default to planned pomodoro time
+      if (workSeconds === 0) {
+        workSeconds = pomCount * POMODORO_DURATION;
+      }
 
       // Distribute work time across subtasks
       if (groupTasks.length > 0) {
@@ -492,6 +497,11 @@ const Index = () => {
     const ot = overtimeCounters[taskId] ?? 0;
     workSeconds += ot;
 
+    // If no timer was used, default to planned pomodoro time
+    if (workSeconds === 0) {
+      workSeconds = task.pomodoroCount * POMODORO_DURATION;
+    }
+
     setTotalWork(taskId, workSeconds);
     stopOvertime(taskId);
     remove(`pomo-${taskId}`);
@@ -499,11 +509,11 @@ const Index = () => {
     setPomodoroMeta(prev => { const n = { ...prev }; delete n[taskId]; return n; });
     updateStatus(taskId, 'done');
     toast.success('✅ ¡Tarea terminada!', { description: `Tiempo de trabajo: ${Math.floor(workSeconds / 3600)}h ${Math.floor((workSeconds % 3600) / 60)}m` });
-  }, [tasks, groups, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
+  }, [allTasks, groups, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
 
   const handleStatusChange = useCallback((id: string, status: string) => {
     if (status === 'done') {
-      const task = tasks.find(t => t.id === id);
+      const task = allTasks.find(t => t.id === id);
       if (task) {
         const meta = pomodoroMeta[id];
         let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
@@ -527,7 +537,7 @@ const Index = () => {
       setTotalWork(id, 0);
     }
     updateStatus(id, status as any);
-  }, [updateStatus, stopOvertime, remove, tasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork]);
+  }, [updateStatus, stopOvertime, remove, allTasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork]);
 
   if (!session.active) {
     return <StartDayScreen onStart={handleStartDay} />;
