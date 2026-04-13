@@ -35,6 +35,13 @@ export function useTasks() {
     }));
   }, []);
 
+  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string }) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      return { ...t, ...updates };
+    }));
+  }, []);
+
   const incrementPomodoro = useCallback((id: string) => {
     setTasks(prev => prev.map(t => {
       if (t.id !== id) return t;
@@ -56,5 +63,5 @@ export function useTasks() {
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const allTasks = tasks;
 
-  return { tasks: dayTasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime };
+  return { tasks: dayTasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, editTask };
 }
