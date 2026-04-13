@@ -7,7 +7,7 @@ import { es } from 'date-fns/locale';
 
 interface Props {
   onAdd: (title: string, pomodoroCount: number, date: string, scheduledTime?: string, groupId?: string, isDaily?: boolean) => void;
-  onAddGroup?: (name: string, date?: string, isDaily?: boolean) => void;
+  onAddGroup?: (name: string, date?: string, isDaily?: boolean, scheduledTime?: string, pomodoroCount?: number) => void;
   defaultDate: string;
 }
 
@@ -19,16 +19,26 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
   const [scheduledTime, setScheduledTime] = useState('');
   const [mode, setMode] = useState<'task' | 'group'>('task');
   const [isDaily, setIsDaily] = useState(false);
+  const [groupPomodoros, setGroupPomodoros] = useState(1);
+  const [groupTime, setGroupTime] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!value.trim()) return;
     if (mode === 'group') {
       const dateStr = taskDate.toISOString().split('T')[0];
-      onAddGroup?.(value.trim(), dateStr);
+      onAddGroup?.(
+        value.trim(),
+        dateStr,
+        isDaily || undefined,
+        isDaily ? (groupTime || undefined) : undefined,
+        isDaily ? groupPomodoros : undefined,
+      );
       setValue('');
       setMode('task');
       setIsDaily(false);
+      setGroupTime('');
+      setGroupPomodoros(1);
       return;
     }
     const dateStr = taskDate.toISOString().split('T')[0];
@@ -113,18 +123,56 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
                 )}
               </div>
               <div className="w-px h-4 bg-border" />
+              <button
+                type="button"
+                onClick={() => setIsDaily(d => !d)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${isDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                title="Se repite todos los días"
+              >
+                <Repeat size={11} />
+                Diario
+              </button>
             </>
           )}
-          {mode === 'task' && (
-            <button
-              type="button"
-              onClick={() => setIsDaily(d => !d)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${isDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-              title="Se repite todos los días"
-            >
-              <Repeat size={11} />
-              Diario
-            </button>
+          {mode === 'group' && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsDaily(d => !d)}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${isDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                title="Este grupo se repite todos los días"
+              >
+                <Repeat size={11} />
+                Diario
+              </button>
+              {isDaily && (
+                <>
+                  <div className="w-px h-4 bg-border" />
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={12} className="text-muted-foreground" />
+                    <input
+                      type="time"
+                      value={groupTime}
+                      onChange={e => setGroupTime(e.target.value)}
+                      className="bg-transparent border-0 text-xs text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer"
+                      title="Hora del grupo"
+                    />
+                  </div>
+                  <div className="w-px h-4 bg-border" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">🍅</span>
+                    <button type="button" onClick={() => setGroupPomodoros(p => Math.max(1, p - 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+                      <Minus size={12} />
+                    </button>
+                    <span className="text-sm font-mono font-semibold w-6 text-center">{groupPomodoros}</span>
+                    <button type="button" onClick={() => setGroupPomodoros(p => Math.min(10, p + 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+                      <Plus size={12} />
+                    </button>
+                    <span className="text-xs text-muted-foreground">({groupPomodoros * 60} min)</span>
+                  </div>
+                </>
+              )}
+            </>
           )}
         </div>
       </div>

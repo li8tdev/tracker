@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/lib/storage';
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat, Circle, CheckCircle2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -18,7 +18,7 @@ interface PomodoroState {
 interface Props {
   group: TaskGroup;
   tasks: Task[];
-  onEditGroup: (id: string, updates: { name?: string }) => void;
+  onEditGroup: (id: string, updates: { name?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number }) => void;
   onDeleteGroup: (id: string) => void;
   onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
@@ -31,6 +31,23 @@ interface Props {
   onStartBreak?: (id: string) => void;
   onContinueNext?: (id: string) => void;
   onFinishTask?: (id: string) => void;
+}
+
+function SimpleSubtask({ task, onStatusChange }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void }) {
+  const isDone = task.status === 'done';
+  return (
+    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors ${isDone ? 'opacity-50' : ''}`}>
+      <button
+        onClick={() => onStatusChange(task.id, isDone ? 'todo' : 'done')}
+        className={`shrink-0 ${isDone ? 'text-success' : 'text-muted-foreground'} hover:scale-110 transition-transform`}
+      >
+        {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+      </button>
+      <span className={`text-[12px] ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+        {task.title}
+      </span>
+    </div>
+  );
 }
 
 export function TaskGroupCard({
@@ -51,6 +68,7 @@ export function TaskGroupCard({
   const [newCalOpen, setNewCalOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
+  const isDaily = !!group.isDaily;
   const done = tasks.filter(t => t.status === 'done').length;
   const total = tasks.length;
   const allDone = total > 0 && done === total;
@@ -66,8 +84,13 @@ export function TaskGroupCard({
   const handleAddSubtask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    const dateStr = newDate.toISOString().split('T')[0];
-    onAddSubtask(newTitle.trim(), newPomodoros, group.id, dateStr, newTime || undefined, newDaily || undefined);
+    if (isDaily) {
+      // Daily group subtasks: simple, no pomodoro/date/time
+      onAddSubtask(newTitle.trim(), 1, group.id, group.date, undefined, undefined);
+    } else {
+      const dateStr = newDate.toISOString().split('T')[0];
+      onAddSubtask(newTitle.trim(), newPomodoros, group.id, dateStr, newTime || undefined, newDaily || undefined);
+    }
     setNewTitle('');
     setNewPomodoros(1);
     setNewTime('');
@@ -106,10 +129,26 @@ export function TaskGroupCard({
           )}
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {isDaily && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                <Repeat size={9} />
+              </span>
+            )}
+            {isDaily && group.scheduledTime && (
+              <span className="text-[10px] text-muted-foreground font-mono">
+                <Clock size={9} className="inline mr-0.5" />
+                {group.scheduledTime}
+              </span>
+            )}
+            {isDaily && group.pomodoroCount && (
+              <span className="text-[10px] text-muted-foreground font-mono">
+                🍅 {group.pomodoroCount}
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground font-mono">
               {done}/{total}
             </span>
-            {totalPomodoros > 0 && (
+            {!isDaily && totalPomodoros > 0 && (
               <span className="text-[10px] text-muted-foreground font-mono">
                 🍅 {totalPomodoros}/{totalPomodoroTarget}
               </span>
@@ -157,25 +196,35 @@ export function TaskGroupCard({
 
         <CollapsibleContent>
           <div className="px-2 pb-2 space-y-0.5">
-            {tasks.map(t => {
-              const pomState = getPomodoroState?.(t.id);
-              return (
-                <TaskCard
-                  key={t.id}
-                  task={t}
-                  onStatusChange={onStatusChange}
-                  onDelete={onDelete}
-                  onEdit={onEdit}
-                  pomodoroState={pomState}
-                  onPomodoroStart={onPomodoroStart}
-                  onPomodoroStop={onPomodoroStop}
-                  onPomodoroReset={onPomodoroReset}
-                  onStartBreak={onStartBreak}
-                  onContinueNext={onContinueNext}
-                  onFinishTask={onFinishTask}
-                />
-              );
-            })}
+            {isDaily ? (
+              // Daily group: simple subtask checkboxes
+              <>
+                {tasks.map(t => (
+                  <SimpleSubtask key={t.id} task={t} onStatusChange={onStatusChange} />
+                ))}
+              </>
+            ) : (
+              // Project group: full-featured subtask cards
+              tasks.map(t => {
+                const pomState = getPomodoroState?.(t.id);
+                return (
+                  <TaskCard
+                    key={t.id}
+                    task={t}
+                    onStatusChange={onStatusChange}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    pomodoroState={pomState}
+                    onPomodoroStart={onPomodoroStart}
+                    onPomodoroStop={onPomodoroStop}
+                    onPomodoroReset={onPomodoroReset}
+                    onStartBreak={onStartBreak}
+                    onContinueNext={onContinueNext}
+                    onFinishTask={onFinishTask}
+                  />
+                );
+              })
+            )}
 
             {adding ? (
               <form onSubmit={handleAddSubtask} className="p-2 ml-4 space-y-2">
@@ -186,46 +235,55 @@ export function TaskGroupCard({
                   className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
                   autoFocus
                 />
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
-                    🍅
-                    <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
-                    <span className="w-3 text-center">{newPomodoros}</span>
-                    <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
-                  </div>
-                  <Popover open={newCalOpen} onOpenChange={setNewCalOpen}>
-                    <PopoverTrigger asChild>
-                      <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
-                        <CalendarDays size={10} />
-                        {format(newDate, "d MMM", { locale: es })}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={newDate} onSelect={d => { if (d) { setNewDate(d); setNewCalOpen(false); } }} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                  <div className="flex items-center gap-1">
-                    <Clock size={10} className="text-muted-foreground" />
-                    <input
-                      type="time"
-                      value={newTime}
-                      onChange={e => setNewTime(e.target.value)}
-                      className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-[3.5rem]"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setNewDaily(d => !d)}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${newDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-                  >
-                    <Repeat size={9} />
-                    Diario
-                  </button>
-                  <div className="flex gap-1 ml-auto shrink-0">
+                {isDaily ? (
+                  // Daily group: just confirm/cancel
+                  <div className="flex gap-1 justify-end">
                     <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
                     <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
                   </div>
-                </div>
+                ) : (
+                  // Project group: full controls
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                      🍅
+                      <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
+                      <span className="w-3 text-center">{newPomodoros}</span>
+                      <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                    </div>
+                    <Popover open={newCalOpen} onOpenChange={setNewCalOpen}>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
+                          <CalendarDays size={10} />
+                          {format(newDate, "d MMM", { locale: es })}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={newDate} onSelect={d => { if (d) { setNewDate(d); setNewCalOpen(false); } }} className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                    <div className="flex items-center gap-1">
+                      <Clock size={10} className="text-muted-foreground" />
+                      <input
+                        type="time"
+                        value={newTime}
+                        onChange={e => setNewTime(e.target.value)}
+                        className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-[3.5rem]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewDaily(d => !d)}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${newDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                    >
+                      <Repeat size={9} />
+                      Diario
+                    </button>
+                    <div className="flex gap-1 ml-auto shrink-0">
+                      <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
+                      <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
+                    </div>
+                  </div>
+                )}
               </form>
             ) : (
               <button

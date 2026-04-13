@@ -14,19 +14,21 @@ export function useTasks() {
     saveGroups(groups);
   }, [groups]);
 
-  const addGroup = useCallback((name: string, date?: string, isDaily?: boolean) => {
+  const addGroup = useCallback((name: string, date?: string, isDaily?: boolean, scheduledTime?: string, pomodoroCount?: number) => {
     const group: TaskGroup = {
       id: generateId(),
       name,
       date: date ?? selectedDate,
       createdAt: new Date().toISOString(),
       isDaily,
+      scheduledTime,
+      pomodoroCount,
     };
     setGroups(prev => [...prev, group]);
     return group.id;
   }, [selectedDate]);
 
-  const editGroup = useCallback((id: string, updates: { name?: string; date?: string; isDaily?: boolean }) => {
+  const editGroup = useCallback((id: string, updates: { name?: string; date?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number }) => {
     setGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
   }, []);
 
@@ -121,8 +123,11 @@ export function useTasks() {
 
   // Reset daily tasks to todo for the new day
   const resetDailyTasks = useCallback((newDate: string) => {
+    // Reset individual daily tasks
     setTasks(prev => prev.map(t => {
-      if (!t.isDaily) return t;
+      // Check if task itself is daily OR belongs to a daily group
+      const belongsToDailyGroup = t.groupId && groups.some(g => g.id === t.groupId && g.isDaily);
+      if (!t.isDaily && !belongsToDailyGroup) return t;
       return {
         ...t,
         status: 'todo' as TaskStatus,
@@ -134,7 +139,12 @@ export function useTasks() {
         totalWorkSeconds: 0,
       };
     }));
-  }, []);
+    // Reset daily groups
+    setGroups(prev => prev.map(g => {
+      if (!g.isDaily) return g;
+      return { ...g, date: newDate, completedAt: undefined };
+    }));
+  }, [groups]);
 
   const dayTasks = tasks.filter(t => t.date === selectedDate);
   const dayGroups = groups.filter(g => g.date === selectedDate);
