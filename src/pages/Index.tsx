@@ -22,7 +22,8 @@ import { DatePicker } from '@/components/DatePicker';
 import { DataActions } from '@/components/DataActions';
 import { StartDayScreen } from '@/components/StartDayScreen';
 import { WorkanaBar } from '@/components/WorkanaBar';
-import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer } from 'lucide-react';
+import { SystemRAM } from '@/components/SystemRAM';
+import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
 
 const POMODORO_DURATION = 60 * 60;
