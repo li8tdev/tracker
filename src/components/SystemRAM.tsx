@@ -270,8 +270,8 @@ export function SystemRAM() {
       {/* Process Logs */}
       <div>
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="text-muted-foreground text-xs">$ tail -f /var/log/ram.log</span>
-          <span className="text-xs text-muted-foreground ml-auto">{logs.length} entries</span>
+          <span className="text-muted-foreground text-xs">Historial de registros</span>
+          <span className="text-xs text-muted-foreground ml-auto">{logs.length} {logs.length === 1 ? 'registro' : 'registros'}</span>
           <div className="flex gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
