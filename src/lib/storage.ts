@@ -12,6 +12,7 @@ export interface Task {
   pomodoroCount: number;
   pomodorosCompleted: number;
   overtimeSeconds: number;
+  totalWorkSeconds: number; // actual focused work time (no breaks)
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
@@ -27,6 +28,7 @@ export function loadTasks(): Task[] {
       pomodoroCount: t.pomodoroCount ?? 1,
       pomodorosCompleted: t.pomodorosCompleted ?? 0,
       overtimeSeconds: t.overtimeSeconds ?? 0,
+      totalWorkSeconds: t.totalWorkSeconds ?? 0,
       scheduledTime: t.scheduledTime ?? undefined,
     }));
   } catch {
