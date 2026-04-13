@@ -555,8 +555,8 @@ const Index = () => {
         {activeTab === 'tasks' ? (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatsCard label="Total hoy" value={tasks.length} icon={ListTodo} />
-              <StatsCard label="Completadas" value={done.length} icon={CheckCircle2} />
+              <StatsCard label="Total hoy" value={allDayTasks.length} icon={ListTodo} />
+              <StatsCard label="Completadas" value={allDayDone.length} icon={CheckCircle2} />
               <StatsCard label="Tasa de éxito" value={`${completionRate}%`} icon={Target} accent />
               <StatsCard label="Racha" value={`${streak}d`} icon={Flame} />
               <StatsCard label="Trabajo hoy" value={`${Math.floor(todayWorkSeconds / 3600)}h${Math.floor((todayWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
