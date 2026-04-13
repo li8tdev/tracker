@@ -479,7 +479,7 @@ const Index = () => {
   const done = ungroupedTasks.filter(t => t.status === 'done');
   const allDayDone = tasks.filter(t => t.status === 'done');
   const allDayTasks = tasks;
-  const completionRate = tasks.length > 0 ? Math.round((done.length / tasks.length) * 100) : 0;
+  const completionRate = allDayTasks.length > 0 ? Math.round((allDayDone.length / allDayTasks.length) * 100) : 0;
 
   let streak = 0;
   for (let i = 0; i < 365; i++) {
