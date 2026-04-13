@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Task, TaskStatus } from '@/lib/storage';
-import { Circle, Clock, CheckCircle2, Trash2, Play, Pause, RotateCcw, Timer, Coffee, AlertTriangle, Pencil, Check, X, Minus, Plus, CalendarDays } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Trash2, Play, Pause, RotateCcw, Timer, Coffee, AlertTriangle, Pencil, Check, X, Minus, Plus, CalendarDays, MoreHorizontal } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -51,12 +51,14 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
   const [editPomodoros, setEditPomodoros] = useState(task.pomodoroCount);
   const [editDate, setEditDate] = useState<Date>(new Date(task.date + 'T12:00:00'));
   const [calOpen, setCalOpen] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const startEdit = () => {
     setEditTitle(task.title);
     setEditPomodoros(task.pomodoroCount);
     setEditDate(new Date(task.date + 'T12:00:00'));
     setEditing(true);
+    setShowActions(false);
   };
 
   const saveEdit = () => {
@@ -72,35 +74,37 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
 
   if (editing) {
     return (
-      <div className="p-3 rounded-xl bg-secondary/30 border border-border space-y-2">
+      <div className="p-3 rounded-lg bg-secondary/40 border border-border space-y-2.5">
         <input
           value={editTitle}
           onChange={e => setEditTitle(e.target.value)}
-          className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+          className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
           autoFocus
           onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
         />
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-muted-foreground">🍅</span>
-            <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="p-0.5 rounded hover:bg-secondary text-muted-foreground"><Minus size={10} /></button>
-            <span className="text-xs font-mono font-semibold w-4 text-center">{editPomodoros}</span>
-            <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="p-0.5 rounded hover:bg-secondary text-muted-foreground"><Plus size={10} /></button>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px]">🍅</span>
+              <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground"><Minus size={10} /></button>
+              <span className="text-xs font-mono font-semibold w-3 text-center">{editPomodoros}</span>
+              <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground"><Plus size={10} /></button>
+            </div>
+            <Popover open={calOpen} onOpenChange={setCalOpen}>
+              <PopoverTrigger asChild>
+                <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
+                  <CalendarDays size={10} />
+                  {format(editDate, "d MMM", { locale: es })}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={editDate} onSelect={d => { if (d) { setEditDate(d); setCalOpen(false); } }} className="p-3 pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
           </div>
-          <Popover open={calOpen} onOpenChange={setCalOpen}>
-            <PopoverTrigger asChild>
-              <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
-                <CalendarDays size={10} />
-                {format(editDate, "d MMM", { locale: es })}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={editDate} onSelect={d => { if (d) { setEditDate(d); setCalOpen(false); } }} className="p-3 pointer-events-auto" />
-            </PopoverContent>
-          </Popover>
-          <div className="flex gap-1 ml-auto">
-            <button onClick={saveEdit} className="p-1 rounded hover:bg-success/10 text-success transition-colors"><Check size={14} /></button>
-            <button onClick={cancelEdit} className="p-1 rounded hover:bg-destructive/10 text-destructive transition-colors"><X size={14} /></button>
+          <div className="flex gap-1">
+            <button onClick={saveEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"><Check size={12} /></button>
+            <button onClick={cancelEdit} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"><X size={12} /></button>
           </div>
         </div>
       </div>
@@ -108,130 +112,132 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
   }
 
   return (
-    <div className={`group flex flex-col gap-2 p-3 rounded-xl hover:bg-secondary/50 transition-all ${task.status === 'done' ? 'opacity-60' : ''}`}>
+    <div className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 ${task.status === 'done' ? 'opacity-50' : ''}`}>
+      {/* Main row */}
       <div className="flex items-start gap-2">
         <button
           onClick={() => onStatusChange(task.id, config.next)}
-          className={`shrink-0 mt-0.5 ${config.className} hover:scale-110 transition-transform`}
+          className={`shrink-0 mt-[3px] ${config.className} hover:scale-110 transition-transform`}
           title={`Cambiar a ${statusConfig[config.next].label}`}
         >
-          <Icon size={18} />
+          <Icon size={16} />
         </button>
-        <div className="flex-1 min-w-0">
-          <span className={`text-sm leading-tight break-words ${task.status === 'done' ? 'line-through' : ''}`}>
+
+        <div className="flex-1 min-w-0 space-y-1">
+          <p className={`text-[13px] leading-snug break-words ${task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
             {task.title}
-          </span>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground font-mono">
+          </p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono">
               🍅 {task.pomodorosCompleted}/{task.pomodoroCount}
             </span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-              task.status === 'todo' ? 'bg-secondary text-muted-foreground' :
-              task.status === 'in_progress' ? 'bg-accent/10 text-accent' :
-              'bg-success/10 text-success'
-            }`}>
-              {config.label}
-            </span>
+            {task.date !== new Date().toISOString().split('T')[0] && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                <CalendarDays size={9} />
+                {format(new Date(task.date + 'T12:00:00'), "d MMM", { locale: es })}
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={startEdit}
-            className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-accent transition-all"
-            title="Editar"
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={() => onDelete(task.id)}
-            className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
+
+        {/* Actions - compact popover for small columns */}
+        <Popover open={showActions} onOpenChange={setShowActions}>
+          <PopoverTrigger asChild>
+            <button className="shrink-0 mt-[2px] p-1 rounded-md opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+              <MoreHorizontal size={14} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-1 flex gap-0.5" align="end" sideOffset={4}>
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Pencil size={12} /> Editar
+            </button>
+            <button
+              onClick={() => { onDelete(task.id); setShowActions(false); }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 size={12} /> Eliminar
+            </button>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      {/* Date badge if not today */}
-      {task.date !== new Date().toISOString().split('T')[0] && (
-        <div className="ml-8">
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <CalendarDays size={10} />
-            {format(new Date(task.date + 'T12:00:00'), "d MMM yyyy", { locale: es })}
-          </span>
-        </div>
-      )}
-
+      {/* Pomodoro controls */}
       {isInProgress && (
-        <div className="ml-8 space-y-2">
+        <div className="mt-2 ml-6 space-y-2">
           {(phase === 'idle' || phase === 'working' || phase === 'paused') && (
-            <div className="flex items-center gap-2">
-              <Timer size={13} className="text-accent" />
-              <span className="font-mono text-xs font-semibold text-accent tabular-nums">
-                {pomodoroState ? formatTime(pomodoroState.remainingSeconds) : '60:00'}
-              </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1 bg-accent/5 border border-accent/15 rounded-md px-2 py-1">
+                <Timer size={11} className="text-accent" />
+                <span className="font-mono text-[11px] font-semibold text-accent tabular-nums">
+                  {pomodoroState ? formatTime(pomodoroState.remainingSeconds) : '60:00'}
+                </span>
+              </div>
               <span className="text-[10px] text-muted-foreground">
-                Pomodoro {pomodoroState?.currentPomodoro ?? 1}/{task.pomodoroCount}
+                {pomodoroState?.currentPomodoro ?? 1}/{task.pomodoroCount}
               </span>
-              <div className="flex gap-1 ml-1">
+              <div className="flex gap-0.5 ml-auto">
                 {phase === 'working' ? (
-                  <button onClick={() => onPomodoroStop?.(task.id)} className="p-1 rounded hover:bg-accent/10 text-accent transition-colors" title="Pausar"><Pause size={12} /></button>
+                  <button onClick={() => onPomodoroStop?.(task.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-accent/10 text-accent transition-colors" title="Pausar"><Pause size={11} /></button>
                 ) : (
-                  <button onClick={() => onPomodoroStart?.(task.id)} className="p-1 rounded hover:bg-accent/10 text-accent transition-colors" title="Iniciar"><Play size={12} /></button>
+                  <button onClick={() => onPomodoroStart?.(task.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-accent/10 text-accent transition-colors" title="Iniciar"><Play size={11} /></button>
                 )}
-                <button onClick={() => onPomodoroReset?.(task.id)} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors" title="Reiniciar"><RotateCcw size={12} /></button>
+                <button onClick={() => onPomodoroReset?.(task.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground transition-colors" title="Reiniciar"><RotateCcw size={11} /></button>
               </div>
             </div>
           )}
 
           {phase === 'break_pending' && (
-            <div className="bg-accent/5 border border-accent/20 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2 text-accent">
-                <Coffee size={14} />
-                <span className="text-xs font-semibold">¡Pomodoro completado! Es hora de descansar</span>
+            <div className="bg-accent/5 border border-accent/15 rounded-md p-2.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-accent">
+                <Coffee size={12} />
+                <span className="text-[11px] font-semibold">¡Hora de descansar!</span>
               </div>
               {pomodoroState?.restMessage && (
-                <p className="text-xs text-muted-foreground leading-relaxed">{pomodoroState.restMessage}</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">{pomodoroState.restMessage}</p>
               )}
-              <button onClick={() => onStartBreak?.(task.id)} className="text-xs bg-accent text-accent-foreground px-3 py-1.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
-                Iniciar descanso (10 min)
+              <button onClick={() => onStartBreak?.(task.id)} className="w-full text-[11px] bg-accent text-accent-foreground px-2.5 py-1 rounded-md font-medium hover:opacity-90 transition-opacity">
+                Descanso (10 min)
               </button>
             </div>
           )}
 
           {phase === 'breaking' && (
-            <div className="flex items-center gap-2">
-              <Coffee size={13} className="text-success" />
-              <span className="font-mono text-xs font-semibold text-success tabular-nums">{formatTime(pomodoroState?.remainingSeconds ?? 0)}</span>
+            <div className="flex items-center gap-1.5 bg-success/5 border border-success/15 rounded-md px-2 py-1">
+              <Coffee size={11} className="text-success" />
+              <span className="font-mono text-[11px] font-semibold text-success tabular-nums">{formatTime(pomodoroState?.remainingSeconds ?? 0)}</span>
               <span className="text-[10px] text-muted-foreground">Descanso</span>
             </div>
           )}
 
           {phase === 'next_pending' && (
-            <div className="bg-success/5 border border-success/20 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2 text-success">
-                <Play size={14} />
-                <span className="text-xs font-semibold">¡Descanso terminado! Listo para continuar</span>
+            <div className="bg-success/5 border border-success/15 rounded-md p-2.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-success">
+                <Play size={12} />
+                <span className="text-[11px] font-semibold">¡Listo para continuar!</span>
               </div>
-              <button onClick={() => onContinueNext?.(task.id)} className="text-xs bg-foreground text-background px-3 py-1.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
-                Iniciar pomodoro {(pomodoroState?.currentPomodoro ?? 1) + 1}/{task.pomodoroCount}
+              <button onClick={() => onContinueNext?.(task.id)} className="w-full text-[11px] bg-foreground text-background px-2.5 py-1 rounded-md font-medium hover:opacity-90 transition-opacity">
+                Pomodoro {(pomodoroState?.currentPomodoro ?? 1) + 1}/{task.pomodoroCount}
               </button>
             </div>
           )}
 
           {(phase === 'all_done' || phase === 'overtime') && (
-            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertTriangle size={14} />
-                <span className="text-xs font-semibold">¡Terminaste los {task.pomodoroCount} pomodoros!</span>
+            <div className="bg-destructive/5 border border-destructive/15 rounded-md p-2.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-destructive">
+                <AlertTriangle size={12} />
+                <span className="text-[11px] font-semibold">¡{task.pomodoroCount} pomodoros completados!</span>
               </div>
               {phase === 'overtime' && (
-                <div className="flex items-center gap-2">
-                  <Timer size={12} className="text-destructive" />
-                  <span className="font-mono text-xs font-semibold text-destructive tabular-nums">+{formatTime(pomodoroState?.remainingSeconds ?? 0)}</span>
-                  <span className="text-[10px] text-muted-foreground">Tiempo adicional</span>
+                <div className="flex items-center gap-1.5">
+                  <Timer size={10} className="text-destructive" />
+                  <span className="font-mono text-[11px] font-semibold text-destructive tabular-nums">+{formatTime(pomodoroState?.remainingSeconds ?? 0)}</span>
+                  <span className="text-[10px] text-muted-foreground">extra</span>
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground">El tiempo adicional se registra en tus estadísticas.</p>
+              <p className="text-[9px] text-muted-foreground">El tiempo extra se registra en estadísticas.</p>
             </div>
           )}
         </div>
