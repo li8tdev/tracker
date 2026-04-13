@@ -49,7 +49,7 @@ function getTaskIdFromTimerId(timerId: string) {
 }
 
 const Index = () => {
-  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask } = useTasks();
+  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
