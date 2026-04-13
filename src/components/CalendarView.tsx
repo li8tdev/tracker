@@ -1,7 +1,7 @@
 import { Task, TaskGroup } from '@/lib/storage';
 import { Calendar } from '@/components/ui/calendar';
 import { useState, useMemo } from 'react';
-import { Circle, Clock, CheckCircle2, Repeat } from 'lucide-react';
+import { Circle, Clock, CheckCircle2, Repeat, Layers } from 'lucide-react';
 
 interface Props {
   allTasks: Task[];
@@ -26,27 +26,145 @@ const statusBg: Record<string, string> = {
   done: 'bg-success/10 border-success/20',
 };
 
-// Generate hour slots from 6am to 11pm
+// Duration = pomodoros * 60min + (pomodoros - 1) * 10min breaks
+function calcDurationMin(pomodoros: number): number {
+  if (pomodoros <= 0) return 0;
+  return pomodoros * 60 + (pomodoros > 1 ? (pomodoros - 1) * 10 : 0);
+}
+
+function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
+function addMinutesToTime(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const totalMin = h * 60 + m + minutes;
+  const endH = Math.floor(totalMin / 60) % 24;
+  const endM = totalMin % 60;
+  return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+}
+
+// Unified calendar entry: either a task or a daily group
+interface CalendarEntry {
+  id: string;
+  title: string;
+  scheduledTime: string;
+  pomodoros: number;
+  durationMin: number;
+  endTime: string;
+  status: 'todo' | 'in_progress' | 'done';
+  isGroup: boolean;
+  isDaily: boolean;
+  pomodorosCompleted: number;
+  overtimeSeconds: number;
+}
+
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6);
 
 export function CalendarView({ allTasks, allGroups = [] }: Props) {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
-
   const selectedDateStr = selectedDay ? selectedDay.toISOString().split('T')[0] : '';
-  
-  // Include daily tasks on any selected date
-  const dayTasks = useMemo(() => {
-    const directTasks = allTasks.filter(t => t.date === selectedDateStr);
-    const dailyTasks = allTasks.filter(t => {
-      if (t.date === selectedDateStr) return false; // already included
-      const group = allGroups.find(g => g.id === t.groupId);
-      return t.isDaily || group?.isDaily;
+
+  // Build calendar entries: individual scheduled tasks + daily groups
+  const entries = useMemo(() => {
+    const result: CalendarEntry[] = [];
+
+    // Daily groups appear on every date
+    const dailyGroups = allGroups.filter(g => g.isDaily && g.scheduledTime && g.pomodoroCount);
+    dailyGroups.forEach(g => {
+      const groupTasks = allTasks.filter(t => t.groupId === g.id);
+      const allDone = groupTasks.length > 0 && groupTasks.every(t => t.status === 'done');
+      const anyInProgress = groupTasks.some(t => t.status === 'in_progress');
+      const completedPomos = groupTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
+      const overtime = groupTasks.reduce((s, t) => s + t.overtimeSeconds, 0);
+      const dur = calcDurationMin(g.pomodoroCount!);
+
+      result.push({
+        id: g.id,
+        title: g.name,
+        scheduledTime: g.scheduledTime!,
+        pomodoros: g.pomodoroCount!,
+        durationMin: dur,
+        endTime: addMinutesToTime(g.scheduledTime!, dur),
+        status: allDone ? 'done' : anyInProgress ? 'in_progress' : 'todo',
+        isGroup: true,
+        isDaily: true,
+        pomodorosCompleted: completedPomos,
+        overtimeSeconds: overtime,
+      });
     });
-    return [...directTasks, ...dailyTasks];
+
+    // Non-daily groups with scheduledTime on this date
+    const projectGroups = allGroups.filter(g => !g.isDaily && g.scheduledTime && g.pomodoroCount && g.date === selectedDateStr);
+    projectGroups.forEach(g => {
+      const groupTasks = allTasks.filter(t => t.groupId === g.id);
+      const allDone = groupTasks.length > 0 && groupTasks.every(t => t.status === 'done');
+      const anyInProgress = groupTasks.some(t => t.status === 'in_progress');
+      const completedPomos = groupTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
+      const overtime = groupTasks.reduce((s, t) => s + t.overtimeSeconds, 0);
+      const dur = calcDurationMin(g.pomodoroCount!);
+
+      result.push({
+        id: g.id,
+        title: g.name,
+        scheduledTime: g.scheduledTime!,
+        pomodoros: g.pomodoroCount!,
+        durationMin: dur,
+        endTime: addMinutesToTime(g.scheduledTime!, dur),
+        status: allDone ? 'done' : anyInProgress ? 'in_progress' : 'todo',
+        isGroup: true,
+        isDaily: false,
+        pomodorosCompleted: completedPomos,
+        overtimeSeconds: overtime,
+      });
+    });
+
+    // Individual scheduled tasks (not belonging to a group with scheduledTime)
+    const groupsWithSchedule = new Set(allGroups.filter(g => g.scheduledTime).map(g => g.id));
+    
+    const directTasks = allTasks.filter(t => t.date === selectedDateStr && t.scheduledTime);
+    const dailyTasks = allTasks.filter(t => {
+      if (t.date === selectedDateStr) return false;
+      return t.isDaily && t.scheduledTime;
+    });
+
+    [...directTasks, ...dailyTasks].forEach(t => {
+      // Skip tasks that belong to a group shown as a block
+      if (t.groupId && groupsWithSchedule.has(t.groupId)) return;
+
+      const dur = calcDurationMin(t.pomodoroCount);
+      result.push({
+        id: t.id,
+        title: t.title,
+        scheduledTime: t.scheduledTime!,
+        pomodoros: t.pomodoroCount,
+        durationMin: dur,
+        endTime: addMinutesToTime(t.scheduledTime!, dur),
+        status: t.status,
+        isGroup: false,
+        isDaily: !!t.isDaily,
+        pomodorosCompleted: t.pomodorosCompleted,
+        overtimeSeconds: t.overtimeSeconds,
+      });
+    });
+
+    return result.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
   }, [allTasks, allGroups, selectedDateStr]);
 
-  const scheduledTasks = useMemo(() => dayTasks.filter(t => t.scheduledTime).sort((a, b) => (a.scheduledTime! > b.scheduledTime! ? 1 : -1)), [dayTasks]);
-  const unscheduledTasks = useMemo(() => dayTasks.filter(t => !t.scheduledTime), [dayTasks]);
+  // Unscheduled tasks for the sidebar
+  const unscheduledTasks = useMemo(() => {
+    const groupsWithSchedule = new Set(allGroups.filter(g => g.scheduledTime).map(g => g.id));
+    const direct = allTasks.filter(t => t.date === selectedDateStr && !t.scheduledTime && !(t.groupId && groupsWithSchedule.has(t.groupId)));
+    const daily = allTasks.filter(t => {
+      if (t.date === selectedDateStr) return false;
+      return t.isDaily && !t.scheduledTime && !(t.groupId && groupsWithSchedule.has(t.groupId));
+    });
+    return [...direct, ...daily];
+  }, [allTasks, allGroups, selectedDateStr]);
 
   const taskDates = useMemo(() => {
     const dates = new Set<string>();
@@ -69,19 +187,36 @@ export function CalendarView({ allTasks, allGroups = [] }: Props) {
     },
   };
 
-  const totalPomodoros = dayTasks.reduce((s, t) => s + t.pomodoroCount, 0);
-  const completedPomodoros = dayTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
+  const totalPomodoros = entries.reduce((s, e) => s + e.pomodoros, 0);
+  const completedPomodoros = entries.reduce((s, e) => s + e.pomodorosCompleted, 0);
 
-  // Map tasks to hour slots
-  const tasksByHour = useMemo(() => {
-    const map: Record<number, Task[]> = {};
-    scheduledTasks.forEach(t => {
-      const hour = parseInt(t.scheduledTime!.split(':')[0], 10);
-      if (!map[hour]) map[hour] = [];
-      map[hour].push(t);
+  // Map entries to hour slots (an entry can span multiple hours)
+  const entriesByHour = useMemo(() => {
+    const map: Record<number, CalendarEntry[]> = {};
+    entries.forEach(e => {
+      const startHour = parseInt(e.scheduledTime.split(':')[0], 10);
+      const endHour = Math.min(23, parseInt(e.endTime.split(':')[0], 10));
+      // Place entry in start hour only, but track span
+      if (!map[startHour]) map[startHour] = [];
+      map[startHour].push(e);
     });
     return map;
-  }, [scheduledTasks]);
+  }, [entries]);
+
+  // Track which hours are "occupied" by a spanning entry
+  const occupiedHours = useMemo(() => {
+    const set = new Set<number>();
+    entries.forEach(e => {
+      const startH = parseInt(e.scheduledTime.split(':')[0], 10);
+      const endMinTotal = parseInt(e.endTime.split(':')[0], 10) * 60 + parseInt(e.endTime.split(':')[1], 10);
+      const startMin = parseInt(e.scheduledTime.split(':')[1], 10);
+      // Mark intermediate hours
+      for (let h = startH + 1; h * 60 < endMinTotal; h++) {
+        set.add(h);
+      }
+    });
+    return set;
+  }, [entries]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -102,7 +237,7 @@ export function CalendarView({ allTasks, allGroups = [] }: Props) {
               {selectedDay?.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
             </h3>
             <span className="text-xs text-muted-foreground">
-              {dayTasks.length} tareas · 🍅 {completedPomodoros}/{totalPomodoros}
+              {entries.length + unscheduledTasks.length} tareas · 🍅 {completedPomodoros}/{totalPomodoros}
             </span>
           </div>
 
@@ -137,47 +272,64 @@ export function CalendarView({ allTasks, allGroups = [] }: Props) {
         <div className="relative border border-border rounded-xl overflow-hidden bg-secondary/20">
           <div className="max-h-[500px] overflow-y-auto">
             {HOURS.map(hour => {
-              const hourTasks = tasksByHour[hour] || [];
+              const hourEntries = entriesByHour[hour] || [];
               const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-              const hasTask = hourTasks.length > 0;
+              const hasEntry = hourEntries.length > 0;
+              const isOccupied = occupiedHours.has(hour);
 
               return (
-                <div key={hour} className={`flex border-b border-border/50 last:border-0 min-h-[48px] ${hasTask ? 'bg-card' : ''}`}>
+                <div key={hour} className={`flex border-b border-border/50 last:border-0 min-h-[48px] ${hasEntry ? 'bg-card' : isOccupied ? 'bg-card/50' : ''}`}>
                   <div className="w-14 shrink-0 py-2 px-2 text-[11px] text-muted-foreground font-mono border-r border-border/50 flex items-start justify-end">
                     {timeStr}
                   </div>
                   <div className="flex-1 py-1.5 px-2 space-y-1">
-                    {hourTasks.map(task => {
-                      const Icon = statusIcons[task.status];
-                      const durationMin = task.pomodoroCount * 60 + (task.pomodoroCount > 1 ? (task.pomodoroCount - 1) * 10 : 0);
+                    {hourEntries.map(entry => {
+                      const Icon = entry.isGroup ? Layers : statusIcons[entry.status];
                       return (
-                        <div key={task.id} className={`flex items-center gap-2 p-1.5 rounded-md border ${statusBg[task.status]} transition-colors`}>
-                          <Icon size={12} className={statusColors[task.status]} />
+                        <div key={entry.id} className={`flex items-center gap-2 p-1.5 rounded-md border ${statusBg[entry.status]} transition-colors`}>
+                          <Icon size={12} className={entry.isGroup ? 'text-primary' : statusColors[entry.status]} />
                           <div className="flex-1 min-w-0">
-                            <p className={`text-xs truncate ${task.status === 'done' ? 'line-through opacity-60' : ''}`}>
-                              {task.title}
-                            </p>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] text-muted-foreground">{task.scheduledTime}</span>
-                              <span className="text-[9px] text-muted-foreground">· {durationMin}min</span>
-                              <span className="text-[9px] text-muted-foreground font-mono">🍅{task.pomodorosCompleted}/{task.pomodoroCount}</span>
+                              <p className={`text-xs truncate ${entry.status === 'done' ? 'line-through opacity-60' : ''}`}>
+                                {entry.title}
+                              </p>
+                              {entry.isDaily && <Repeat size={10} className="text-accent shrink-0" />}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[9px] text-muted-foreground">
+                                {entry.scheduledTime} – {entry.endTime}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground">
+                                · {formatDuration(entry.durationMin)}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground font-mono">
+                                🍅{entry.pomodorosCompleted}/{entry.pomodoros}
+                              </span>
+                              {entry.pomodoros > 1 && (
+                                <span className="text-[9px] text-muted-foreground/60">
+                                  ({(entry.pomodoros - 1) * 10}min descanso)
+                                </span>
+                              )}
                             </div>
                           </div>
-                          {task.overtimeSeconds > 0 && (
+                          {entry.overtimeSeconds > 0 && (
                             <span className="text-[9px] text-destructive font-mono shrink-0">
-                              +{Math.floor(task.overtimeSeconds / 60)}m
+                              +{Math.floor(entry.overtimeSeconds / 60)}m
                             </span>
                           )}
                         </div>
                       );
                     })}
+                    {isOccupied && hourEntries.length === 0 && (
+                      <div className="h-1 rounded-full bg-primary/20 my-2" />
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-        {scheduledTasks.length === 0 && (
+        {entries.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-4">
             Agrega una hora a tus tareas para ver tu agenda organizada aquí
           </p>
