@@ -21,6 +21,7 @@ interface Props {
   onDelete: (id: string) => void;
   onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
   onDuplicate?: (id: string) => void;
+  pomodoroState?: PomodoroState;
   onPomodoroStart?: (id: string) => void;
   onPomodoroStop?: (id: string) => void;
   onPomodoroReset?: (id: string) => void;
