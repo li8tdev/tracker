@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Plus, X } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AlertTriangle, Plus, X, Trash2, Download, Upload } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface RAMLog {
   id: string;
@@ -67,6 +68,7 @@ export function SystemRAM() {
   const [newTriggerLabel, setNewTriggerLabel] = useState('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const allTriggers = [...DEFAULT_TRIGGERS, ...customTriggers];
 
@@ -108,6 +110,42 @@ export function SystemRAM() {
     setLogs(prev => prev.map(l => l.id === logId ? { ...l, note: noteText } : l));
     setEditingNote(null);
     setNoteText('');
+  };
+
+  const handleClearLogs = () => {
+    setLogs([]);
+    toast.success('Log limpiado');
+  };
+
+  const handleExportRAM = () => {
+    const data = { level, logs, customTriggers };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ram-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('RAM exportada');
+  };
+
+  const handleImportRAM = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (typeof data.level === 'number') setLevel(data.level);
+        if (Array.isArray(data.logs)) setLogs(data.logs);
+        if (Array.isArray(data.customTriggers)) setCustomTriggers(data.customTriggers);
+        toast.success('RAM importada correctamente');
+      } catch {
+        toast.error('Archivo JSON inválido');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -249,9 +287,36 @@ export function SystemRAM() {
 
       {/* Process Logs */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="text-muted-foreground text-xs">$ tail -f /var/log/ram.log</span>
           <span className="text-xs text-muted-foreground ml-auto">{logs.length} entries</span>
+          <div className="flex gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleClearLogs} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" disabled={logs.length === 0}>
+                  <Trash2 size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-mono text-xs">Limpiar log</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={handleExportRAM} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  <Download size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-mono text-xs">Exportar RAM (.json)</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                  <Upload size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="font-mono text-xs">Importar RAM (.json)</TooltipContent>
+            </Tooltip>
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleImportRAM} className="hidden" />
+          </div>
         </div>
         <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
           {logs.length === 0 && (
