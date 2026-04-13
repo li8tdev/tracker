@@ -537,7 +537,7 @@ const Index = () => {
     addTask(title, pomodoroCount, date ?? selectedDate, scheduledTime, groupId, isDaily);
   };
 
-  const getGroupTasks = (groupId: string) => tasks.filter(t => t.groupId === groupId);
+  const getGroupTasks = (groupId: string) => allTasks.filter(t => t.groupId === groupId);
 
   const ungroupedTasks = tasks.filter(t => !t.groupId);
   const todo = ungroupedTasks.filter(t => t.status === 'todo');
@@ -557,8 +557,8 @@ const Index = () => {
     else break;
   }
 
-  const todayWorkSeconds = tasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
-  const totalWorkSeconds = allTasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
+  const todayWorkSeconds = tasks.filter(t => t.status === 'done').reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
+  const totalWorkSeconds = allTasks.filter(t => t.status === 'done').reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
   const workanaRemaining = getRemainingForTimer(WORKANA_TIMER_ID) ?? getNextWorkanaRemaining();
 
   const getPomodoroState = (taskId: string) => {
