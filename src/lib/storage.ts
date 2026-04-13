@@ -13,9 +13,33 @@ export interface Task {
   pomodorosCompleted: number;
   overtimeSeconds: number;
   totalWorkSeconds: number; // actual focused work time (no breaks)
+  groupId?: string; // belongs to a task group
+}
+
+export interface TaskGroup {
+  id: string;
+  name: string;
+  date: string; // YYYY-MM-DD
+  createdAt: string;
+  completedAt?: string;
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
+const GROUPS_KEY = 'productivity-tracker-groups';
+
+export function loadGroups(): TaskGroup[] {
+  try {
+    const data = localStorage.getItem(GROUPS_KEY);
+    if (!data) return [];
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+export function saveGroups(groups: TaskGroup[]) {
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+}
 
 export function loadTasks(): Task[] {
   try {

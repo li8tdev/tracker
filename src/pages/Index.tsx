@@ -14,6 +14,7 @@ import {
 } from '@/lib/timerPersistence';
 import { TaskInput } from '@/components/TaskInput';
 import { TaskCard, PomodoroPhase } from '@/components/TaskCard';
+import { TaskGroupCard } from '@/components/TaskGroupCard';
 import { StatsCard } from '@/components/StatsCard';
 import { Analytics } from '@/components/Analytics';
 import { CalendarView } from '@/components/CalendarView';
@@ -48,7 +49,7 @@ function getTaskIdFromTimerId(timerId: string) {
 }
 
 const Index = () => {
-  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask } = useTasks();
+  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
@@ -472,10 +473,19 @@ const Index = () => {
     return <StartDayScreen onStart={handleStartDay} />;
   }
 
-  const todo = tasks.filter(t => t.status === 'todo');
-  const inProgress = tasks.filter(t => t.status === 'in_progress');
-  const done = tasks.filter(t => t.status === 'done');
-  const completionRate = tasks.length > 0 ? Math.round((done.length / tasks.length) * 100) : 0;
+  const handleAddSubtask = (title: string, pomodoroCount: number, groupId: string) => {
+    addTask(title, pomodoroCount, selectedDate, undefined, groupId);
+  };
+
+  const getGroupTasks = (groupId: string) => tasks.filter(t => t.groupId === groupId);
+
+  const ungroupedTasks = tasks.filter(t => !t.groupId);
+  const todo = ungroupedTasks.filter(t => t.status === 'todo');
+  const inProgress = ungroupedTasks.filter(t => t.status === 'in_progress');
+  const done = ungroupedTasks.filter(t => t.status === 'done');
+  const allDayDone = tasks.filter(t => t.status === 'done');
+  const allDayTasks = tasks;
+  const completionRate = allDayTasks.length > 0 ? Math.round((allDayDone.length / allDayTasks.length) * 100) : 0;
 
   let streak = 0;
   for (let i = 0; i < 365; i++) {
@@ -551,8 +561,8 @@ const Index = () => {
         {activeTab === 'tasks' ? (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatsCard label="Total hoy" value={tasks.length} icon={ListTodo} />
-              <StatsCard label="Completadas" value={done.length} icon={CheckCircle2} />
+              <StatsCard label="Total hoy" value={allDayTasks.length} icon={ListTodo} />
+              <StatsCard label="Completadas" value={allDayDone.length} icon={CheckCircle2} />
               <StatsCard label="Tasa de éxito" value={`${completionRate}%`} icon={Target} accent />
               <StatsCard label="Racha" value={`${streak}d`} icon={Flame} />
               <StatsCard label="Trabajo hoy" value={`${Math.floor(todayWorkSeconds / 3600)}h${Math.floor((todayWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
@@ -562,7 +572,7 @@ const Index = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-5">
-                  <TaskInput onAdd={addTask} defaultDate={selectedDate} />
+                  <TaskInput onAdd={addTask} onAddGroup={addGroup} defaultDate={selectedDate} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -572,7 +582,18 @@ const Index = () => {
                       <h3 className="font-heading font-semibold text-sm">Pendientes</h3>
                       <span className="text-xs text-muted-foreground ml-auto">{todo.length}</span>
                     </div>
-                    {todo.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
+                    {groups.map(g => {
+                      const gt = getGroupTasks(g.id);
+                      if (gt.length === 0 && !g.completedAt) return (
+                        <TaskGroupCard key={g.id} group={g} tasks={[]} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                      );
+                      const hasTodo = gt.some(t => t.status === 'todo');
+                      if (!hasTodo && gt.length > 0) return null;
+                      return (
+                        <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                      );
+                    })}
+                    {todo.length === 0 && groups.filter(g => getGroupTasks(g.id).length === 0 && !g.completedAt).length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'todo')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
                     {todo.map(t => (
                      <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} />
                     ))}
@@ -584,7 +605,15 @@ const Index = () => {
                       <h3 className="font-heading font-semibold text-sm">En Progreso</h3>
                       <span className="text-xs text-muted-foreground ml-auto">{inProgress.length}</span>
                     </div>
-                    {inProgress.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada en progreso</p>}
+                    {groups.map(g => {
+                      const gt = getGroupTasks(g.id);
+                      const hasInProgress = gt.some(t => t.status === 'in_progress');
+                      if (!hasInProgress) return null;
+                      return (
+                        <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                      );
+                    })}
+                    {inProgress.length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'in_progress')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada en progreso</p>}
                     {inProgress.map(t => (
                       <TaskCard
                         key={t.id}
@@ -609,7 +638,14 @@ const Index = () => {
                       <h3 className="font-heading font-semibold text-sm">Completadas</h3>
                       <span className="text-xs text-muted-foreground ml-auto">{done.length}</span>
                     </div>
-                    {done.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
+                    {groups.map(g => {
+                      const gt = getGroupTasks(g.id);
+                      if (!g.completedAt || gt.length === 0) return null;
+                      return (
+                        <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                      );
+                    })}
+                    {done.length === 0 && groups.filter(g => g.completedAt && getGroupTasks(g.id).length > 0).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
                     {done.map(t => (
                       <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onEdit={editTask} />
                     ))}
