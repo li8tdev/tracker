@@ -144,6 +144,11 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono">
               🍅 {task.pomodorosCompleted}/{task.pomodoroCount}
             </span>
+            {task.totalWorkSeconds > 0 && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono">
+                ⏱ {Math.floor(task.totalWorkSeconds / 3600)}h{Math.floor((task.totalWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m
+              </span>
+            )}
             {task.scheduledTime && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                 <Clock size={9} />
