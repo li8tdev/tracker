@@ -9,12 +9,12 @@ export function useTasks() {
     saveTasks(tasks);
   }, [tasks]);
 
-  const addTask = useCallback((title: string, pomodoroCount: number = 1) => {
+  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string) => {
     const task: Task = {
       id: generateId(),
       title,
       status: 'todo',
-      date: selectedDate,
+      date: date ?? selectedDate,
       createdAt: new Date().toISOString(),
       pomodoroCount,
       pomodorosCompleted: 0,
