@@ -21,7 +21,9 @@ export interface PersistedPomodoroMeta {
 }
 
 export interface PersistedOvertime {
-  startedAt: number; // Date.now() when overtime started
+  startedAt?: number; // Date.now() when overtime started or resumed
+  elapsedSeconds?: number; // accumulated elapsed seconds before the latest resume
+  running?: boolean;
 }
 
 // Timer states

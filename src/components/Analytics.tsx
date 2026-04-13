@@ -2,10 +2,12 @@ import { Task } from '@/lib/storage';
 import { useMemo } from 'react';
 
 interface Props {
-  allTasks: Task[];
+  allTasks?: Task[];
 }
 
-export function Analytics({ allTasks }: Props) {
+export function Analytics({ allTasks = [] }: Props) {
+  const safeTasks = Array.isArray(allTasks) ? allTasks : [];
+
   const stats = useMemo(() => {
     const last7Days: string[] = [];
     for (let i = 6; i >= 0; i--) {
@@ -15,14 +17,14 @@ export function Analytics({ allTasks }: Props) {
     }
 
     const dailyData = last7Days.map(date => {
-      const dayTasks = allTasks.filter(t => t.date === date);
+      const dayTasks = safeTasks.filter(t => t.date === date);
       const completed = dayTasks.filter(t => t.status === 'done').length;
       const total = dayTasks.length;
       return { date, completed, total, label: new Date(date + 'T12:00:00').toLocaleDateString('es', { weekday: 'short' }) };
     });
 
-    const totalCompleted = allTasks.filter(t => t.status === 'done').length;
-    const totalTasks = allTasks.length;
+    const totalCompleted = safeTasks.filter(t => t.status === 'done').length;
+    const totalTasks = safeTasks.length;
     const completionRate = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
 
     // Streak calculation
@@ -31,13 +33,13 @@ export function Analytics({ allTasks }: Props) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const dayCompleted = allTasks.filter(t => t.date === dateStr && t.status === 'done').length;
+      const dayCompleted = safeTasks.filter(t => t.date === dateStr && t.status === 'done').length;
       if (dayCompleted > 0) streak++;
       else break;
     }
 
     return { dailyData, completionRate, streak };
-  }, [allTasks]);
+  }, [safeTasks]);
 
   const maxTasks = Math.max(...stats.dailyData.map(d => d.total), 1);
 

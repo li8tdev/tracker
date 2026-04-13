@@ -30,17 +30,22 @@ export function useDaySession() {
   }, [session]);
 
   const startDay = useCallback(() => {
+    setElapsed(0);
     setSession({ active: true, startedAt: new Date().toISOString() });
   }, []);
 
   const endDay = useCallback(() => {
+    setElapsed(0);
     setSession({ active: false, startedAt: null });
   }, []);
 
   // Elapsed hours since start
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    if (!session.active || !session.startedAt) return;
+    if (!session.active || !session.startedAt) {
+      setElapsed(0);
+      return;
+    }
     const update = () => {
       const diff = Date.now() - new Date(session.startedAt!).getTime();
       setElapsed(Math.floor(diff / 1000));

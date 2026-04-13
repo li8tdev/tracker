@@ -10,6 +10,7 @@ import {
   saveOvertimeStates, loadOvertimeStates,
   getWorkanaPaused, setWorkanaPaused as persistWorkanaPaused,
   PersistedPomodoroMeta,
+  PersistedTimer,
 } from '@/lib/timerPersistence';
 import { TaskInput } from '@/components/TaskInput';
 import { TaskCard, PomodoroPhase } from '@/components/TaskCard';
@@ -34,12 +35,27 @@ interface PomodoroMeta {
   restMessage?: string;
 }
 
+function getRemainingFromTimer(timer: PersistedTimer) {
+  if (timer.running) {
+    return Math.max(0, timer.duration - Math.floor((Date.now() - timer.startedAt) / 1000));
+  }
+
+  return timer.pausedRemaining ?? timer.duration;
+}
+
+function getTaskIdFromTimerId(timerId: string) {
+  return timerId.replace('pomo-', '');
+}
+
 const Index = () => {
   const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
   const [workanaPaused, setWorkanaPausedState] = useState(() => getWorkanaPaused());
+  const [timersHydrated, setTimersHydrated] = useState(false);
+  const sessionActiveRef = useRef(session.active);
+  const workanaPausedRef = useRef(workanaPaused);
 
   // Track pomodoro phase per task - restore from localStorage
   const [pomodoroMeta, setPomodoroMeta] = useState<Record<string, PomodoroMeta>>(() => {
@@ -57,7 +73,12 @@ const Index = () => {
     const saved = loadOvertimeStates();
     const result: Record<string, number> = {};
     for (const [k, v] of Object.entries(saved)) {
-      result[k] = Math.floor((Date.now() - v.startedAt) / 1000);
+      const elapsedBase = v.elapsedSeconds ?? 0;
+      if (v.running === false || !v.startedAt) {
+        result[k] = elapsedBase;
+      } else {
+        result[k] = elapsedBase + Math.floor((Date.now() - v.startedAt) / 1000);
+      }
     }
     return result;
   });
@@ -71,15 +92,31 @@ const Index = () => {
     savePomodoroMeta(toSave);
   }, [pomodoroMeta]);
 
+  useEffect(() => {
+    sessionActiveRef.current = session.active;
+  }, [session.active]);
+
+  useEffect(() => {
+    workanaPausedRef.current = workanaPaused;
+  }, [workanaPaused]);
+
+  const getNextWorkanaRemaining = useCallback(() => {
+    if (!session.startedAt) return WORKANA_INTERVAL;
+
+    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000));
+    const remainder = elapsed % WORKANA_INTERVAL;
+    return remainder === 0 ? WORKANA_INTERVAL : WORKANA_INTERVAL - remainder;
+  }, [session.startedAt]);
+
   const handleTimerDone = useCallback((id: string, timerType: string) => {
     if (timerType === 'workana') {
+      clearTimerState(WORKANA_TIMER_ID);
+      if (!sessionActiveRef.current || workanaPausedRef.current) return;
+
       sendNotification('📨 ¡Envía propuestas en Workana!', 'Es hora de revisar Workana y enviar propuestas.');
       toast('📨 ¡Envía propuestas en Workana!', { description: 'Revisa Workana y envía propuestas ahora.', duration: 10000 });
-      clearTimerState(WORKANA_TIMER_ID);
-      setTimeout(() => {
-        start(WORKANA_TIMER_ID, WORKANA_INTERVAL, 'workana');
-        upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: WORKANA_INTERVAL, startedAt: Date.now(), running: true });
-      }, 500);
+      start(WORKANA_TIMER_ID, WORKANA_INTERVAL, 'workana');
+      upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: WORKANA_INTERVAL, startedAt: Date.now(), running: true });
     } else if (timerType === 'break') {
       const taskId = id.replace('pomo-', '');
       sendNotification('✅ ¡Descanso terminado!', '¡Listo para el siguiente pomodoro!');
@@ -89,7 +126,7 @@ const Index = () => {
     } else {
       const taskId = id.replace('pomo-', '');
       const meta = pomodoroMeta[taskId];
-      const task = tasks.find(t => t.id === taskId);
+      const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
 
       incrementPomodoro(taskId);
@@ -108,9 +145,17 @@ const Index = () => {
         setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'break_pending', restMessage: msg, currentPomodoro: newCompleted } }));
       }
     }
-  }, [tasks, pomodoroMeta, incrementPomodoro]);
+  }, [allTasks, pomodoroMeta, incrementPomodoro]);
 
-  const { timers, start, stop, reset, remove, restore } = useTimer(handleTimerDone);
+  const { timers, start, stop, remove, restore } = useTimer(handleTimerDone);
+
+  const getRemainingForTimer = useCallback((timerId: string) => {
+    const liveRemaining = timers[timerId];
+    if (liveRemaining !== undefined) return liveRemaining;
+
+    const savedTimer = loadTimerStates().find(timer => timer.id === timerId);
+    return savedTimer ? getRemainingFromTimer(savedTimer) : undefined;
+  }, [timers]);
 
   // Restore timers on mount
   const restoredRef = useRef(false);
@@ -119,34 +164,60 @@ const Index = () => {
     restoredRef.current = true;
 
     const saved = loadTimerStates();
-    if (saved.length === 0) return;
+    if (saved.length === 0) {
+      setTimersHydrated(true);
+      return;
+    }
 
-    const entries = saved.map(t => {
-      let remaining: number;
-      if (t.running) {
-        const elapsed = Math.floor((Date.now() - t.startedAt) / 1000);
-        remaining = Math.max(0, t.duration - elapsed);
-      } else {
-        remaining = t.pausedRemaining ?? t.duration;
-      }
-      return { id: t.id, remaining, running: t.running && remaining > 0, type: t.type };
-    }).filter(e => e.remaining > 0);
+    const restoredMeta: Record<string, PomodoroMeta> = {};
+    const expiredTimers: Array<{ id: string; type: PersistedTimer['type'] }> = [];
+
+    const entries = saved
+      .map((timer) => {
+        const remaining = getRemainingFromTimer(timer);
+
+        if (timer.id.startsWith('pomo-')) {
+          const taskId = getTaskIdFromTimerId(timer.id);
+          const task = allTasks.find(candidate => candidate.id === taskId);
+          restoredMeta[taskId] = {
+            currentPomodoro: pomodoroMeta[taskId]?.currentPomodoro ?? Math.max(1, (task?.pomodorosCompleted ?? 0) + 1),
+            phase: timer.type === 'break' ? 'breaking' : timer.running ? 'working' : 'paused',
+            restMessage: pomodoroMeta[taskId]?.restMessage,
+          };
+        }
+
+        if (timer.running && remaining <= 0) {
+          expiredTimers.push({ id: timer.id, type: timer.type });
+          return null;
+        }
+
+        if (remaining <= 0) return null;
+        return { id: timer.id, remaining, running: timer.running && remaining > 0, type: timer.type };
+      })
+      .filter((entry): entry is { id: string; remaining: number; running: boolean; type: PersistedTimer['type'] } => entry !== null);
+
+    if (Object.keys(restoredMeta).length > 0) {
+      setPomodoroMeta(prev => ({ ...prev, ...restoredMeta }));
+    }
 
     if (entries.length > 0) restore(entries);
-  }, [restore]);
+    expiredTimers.forEach((timer) => handleTimerDone(timer.id, timer.type));
+    setTimersHydrated(true);
+  }, [restore, allTasks, pomodoroMeta, handleTimerDone]);
 
   // Restore overtime intervals on mount
   useEffect(() => {
     const saved = loadOvertimeStates();
     for (const [taskId, state] of Object.entries(saved)) {
-      if (!overtimeIntervals.current[taskId]) {
-        overtimeIntervals.current[taskId] = setInterval(() => {
-          setOvertimeCounters(prev => {
-            const elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
-            return { ...prev, [taskId]: elapsed };
-          });
-        }, 1000);
-      }
+      if (state.running === false || !state.startedAt || overtimeIntervals.current[taskId]) continue;
+
+      const elapsedBase = state.elapsedSeconds ?? 0;
+      overtimeIntervals.current[taskId] = setInterval(() => {
+        setOvertimeCounters(prev => {
+          const elapsed = elapsedBase + Math.floor((Date.now() - state.startedAt!) / 1000);
+          return { ...prev, [taskId]: elapsed };
+        });
+      }, 1000);
     }
     return () => {
       Object.values(overtimeIntervals.current).forEach(clearInterval);
@@ -158,7 +229,7 @@ const Index = () => {
     const startedAt = Date.now();
     setOvertimeCounters(prev => ({ ...prev, [taskId]: 0 }));
     const otStates = loadOvertimeStates();
-    otStates[taskId] = { startedAt };
+    otStates[taskId] = { startedAt, elapsedSeconds: 0, running: true };
     saveOvertimeStates(otStates);
     overtimeIntervals.current[taskId] = setInterval(() => {
       setOvertimeCounters(prev => ({ ...prev, [taskId]: Math.floor((Date.now() - startedAt) / 1000) }));
@@ -208,39 +279,97 @@ const Index = () => {
 
   // Workana timer init/restore
   useEffect(() => {
-    if (session.active && !workanaInitialized.current) {
-      workanaInitialized.current = true;
-      if (workanaPaused) return; // Don't start if paused
-      // Check if already restored from persistence
-      if (timers[WORKANA_TIMER_ID] !== undefined) return;
-      const elapsed = session.elapsedSeconds;
-      const remaining = WORKANA_INTERVAL - (elapsed % WORKANA_INTERVAL);
-      start(WORKANA_TIMER_ID, remaining, 'workana');
-      upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: remaining, startedAt: Date.now(), running: true });
-    }
     if (!session.active) {
       workanaInitialized.current = false;
       remove(WORKANA_TIMER_ID);
       clearTimerState(WORKANA_TIMER_ID);
+      return;
     }
-  }, [session.active]);
+
+    if (!timersHydrated || workanaPaused || workanaInitialized.current) return;
+
+    const savedWorkana = loadTimerStates().find(timer => timer.id === WORKANA_TIMER_ID);
+    if (savedWorkana) {
+      const remaining = getRemainingFromTimer(savedWorkana);
+      if (savedWorkana.running && remaining > 0) {
+        workanaInitialized.current = true;
+        return;
+      }
+    }
+
+    workanaInitialized.current = true;
+    const remaining = getNextWorkanaRemaining();
+    start(WORKANA_TIMER_ID, remaining, 'workana');
+    upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: remaining, startedAt: Date.now(), running: true });
+  }, [session.active, workanaPaused, timersHydrated, start, remove, getNextWorkanaRemaining]);
 
   // Workana pause/resume
   const handleToggleWorkanaPause = useCallback(() => {
+    const remaining = Math.max(1, getRemainingForTimer(WORKANA_TIMER_ID) ?? getNextWorkanaRemaining());
+
     if (workanaPaused) {
-      // Resume
       setWorkanaPausedState(false);
       persistWorkanaPaused(false);
-      start(WORKANA_TIMER_ID, WORKANA_INTERVAL, 'workana');
-      upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: WORKANA_INTERVAL, startedAt: Date.now(), running: true });
-    } else {
-      // Pause
-      setWorkanaPausedState(true);
-      persistWorkanaPaused(true);
-      remove(WORKANA_TIMER_ID);
-      clearTimerState(WORKANA_TIMER_ID);
+      start(WORKANA_TIMER_ID, remaining, 'workana');
+      upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: remaining, startedAt: Date.now(), running: true });
+      return;
     }
-  }, [workanaPaused, start, remove]);
+
+    setWorkanaPausedState(true);
+    persistWorkanaPaused(true);
+    stop(WORKANA_TIMER_ID);
+    upsertTimerState({ id: WORKANA_TIMER_ID, type: 'workana', duration: remaining, startedAt: Date.now(), running: false, pausedRemaining: remaining });
+  }, [workanaPaused, getRemainingForTimer, getNextWorkanaRemaining, start, stop]);
+
+  const handleEndDay = useCallback(() => {
+    const nextPomodoroMeta: Record<string, PomodoroMeta> = { ...pomodoroMeta };
+    const nextOvertimeStates = { ...loadOvertimeStates() };
+    const savedTimers = loadTimerStates();
+
+    savedTimers.forEach((timer) => {
+      if (timer.id === WORKANA_TIMER_ID || !timer.id.startsWith('pomo-')) return;
+
+      const taskId = getTaskIdFromTimerId(timer.id);
+      const task = allTasks.find(candidate => candidate.id === taskId);
+      const currentPomodoro = nextPomodoroMeta[taskId]?.currentPomodoro ?? Math.max(1, (task?.pomodorosCompleted ?? 0) + 1);
+
+      if (timer.type === 'break') {
+        remove(timer.id);
+        clearTimerState(timer.id);
+        nextPomodoroMeta[taskId] = {
+          currentPomodoro,
+          phase: 'break_pending',
+          restMessage: nextPomodoroMeta[taskId]?.restMessage,
+        };
+        return;
+      }
+
+      const remaining = Math.max(1, getRemainingForTimer(timer.id) ?? getRemainingFromTimer(timer));
+      stop(timer.id);
+      upsertTimerState({ id: timer.id, type: 'pomodoro', duration: remaining, startedAt: Date.now(), running: false, pausedRemaining: remaining });
+      nextPomodoroMeta[taskId] = {
+        currentPomodoro,
+        phase: 'paused',
+        restMessage: nextPomodoroMeta[taskId]?.restMessage,
+      };
+    });
+
+    Object.entries(overtimeCounters).forEach(([taskId, seconds]) => {
+      if (overtimeIntervals.current[taskId]) {
+        clearInterval(overtimeIntervals.current[taskId]);
+        delete overtimeIntervals.current[taskId];
+      }
+
+      nextOvertimeStates[taskId] = { elapsedSeconds: seconds, running: false };
+    });
+
+    saveOvertimeStates(nextOvertimeStates);
+    remove(WORKANA_TIMER_ID);
+    clearTimerState(WORKANA_TIMER_ID);
+    workanaInitialized.current = false;
+    setPomodoroMeta(nextPomodoroMeta);
+    session.endDay();
+  }, [allTasks, getRemainingForTimer, overtimeCounters, pomodoroMeta, remove, session.endDay, stop]);
 
   const handleStartDay = () => {
     session.startDay();
@@ -251,24 +380,36 @@ const Index = () => {
   // Pomodoro controls - with persistence
   const handlePomodoroStart = useCallback((taskId: string) => {
     const meta = pomodoroMeta[taskId];
-    const currentPom = meta?.currentPomodoro ?? 0;
-    start(`pomo-${taskId}`, POMODORO_DURATION, 'pomodoro');
-    upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration: POMODORO_DURATION, startedAt: Date.now(), running: true });
-    setPomodoroMeta(prev => ({ ...prev, [taskId]: { phase: 'working', currentPomodoro: currentPom || 1 } }));
-  }, [start, pomodoroMeta]);
+    const task = allTasks.find(candidate => candidate.id === taskId);
+    const currentPomodoro = meta?.currentPomodoro ?? Math.max(1, (task?.pomodorosCompleted ?? 0) + 1);
+    const duration = meta?.phase === 'paused'
+      ? Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION)
+      : POMODORO_DURATION;
+
+    start(`pomo-${taskId}`, duration, 'pomodoro');
+    upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration, startedAt: Date.now(), running: true });
+    setPomodoroMeta(prev => ({
+      ...prev,
+      [taskId]: {
+        currentPomodoro,
+        phase: 'working',
+        restMessage: prev[taskId]?.restMessage,
+      },
+    }));
+  }, [allTasks, getRemainingForTimer, pomodoroMeta, start]);
 
   const handlePomodoroStop = useCallback((taskId: string) => {
     stop(`pomo-${taskId}`);
-    const remaining = timers[`pomo-${taskId}`] ?? POMODORO_DURATION;
-    upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration: POMODORO_DURATION, startedAt: Date.now(), running: false, pausedRemaining: remaining });
+    const remaining = Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION);
+    upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration: remaining, startedAt: Date.now(), running: false, pausedRemaining: remaining });
     setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'paused' } }));
-  }, [stop, timers]);
+  }, [getRemainingForTimer, stop]);
 
   const handlePomodoroReset = useCallback((taskId: string) => {
-    reset(`pomo-${taskId}`, POMODORO_DURATION, 'pomodoro');
-    upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration: POMODORO_DURATION, startedAt: Date.now(), running: false, pausedRemaining: POMODORO_DURATION });
+    remove(`pomo-${taskId}`);
+    clearTimerState(`pomo-${taskId}`);
     setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'idle' } }));
-  }, [reset]);
+  }, [remove]);
 
   const handleStartBreak = useCallback((taskId: string) => {
     start(`pomo-${taskId}`, BREAK_DURATION, 'break');
@@ -289,7 +430,7 @@ const Index = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     const meta = pomodoroMeta[taskId];
-    const timerVal = timers[`pomo-${taskId}`];
+    const timerVal = getRemainingForTimer(`pomo-${taskId}`);
 
     let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
     if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
@@ -305,7 +446,7 @@ const Index = () => {
     setPomodoroMeta(prev => { const n = { ...prev }; delete n[taskId]; return n; });
     updateStatus(taskId, 'done');
     toast.success('✅ ¡Tarea terminada!', { description: `Tiempo de trabajo: ${Math.floor(workSeconds / 3600)}h ${Math.floor((workSeconds % 3600) / 60)}m` });
-  }, [tasks, pomodoroMeta, timers, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
+  }, [tasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
 
   const handleStatusChange = useCallback((id: string, status: string) => {
     if (status === 'done') {
@@ -313,7 +454,7 @@ const Index = () => {
       if (task && task.totalWorkSeconds === 0) {
         const meta = pomodoroMeta[id];
         let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
-        const timerVal = timers[`pomo-${id}`];
+        const timerVal = getRemainingForTimer(`pomo-${id}`);
         if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
           workSeconds += POMODORO_DURATION - timerVal;
         }
@@ -326,7 +467,7 @@ const Index = () => {
       setPomodoroMeta(prev => { const n = { ...prev }; delete n[id]; return n; });
     }
     updateStatus(id, status as any);
-  }, [updateStatus, stopOvertime, remove, tasks, pomodoroMeta, timers, overtimeCounters, setTotalWork]);
+  }, [updateStatus, stopOvertime, remove, tasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork]);
 
   if (!session.active) {
     return <StartDayScreen onStart={handleStartDay} />;
@@ -349,12 +490,12 @@ const Index = () => {
 
   const todayWorkSeconds = tasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
   const totalWorkSeconds = allTasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
-  const workanaRemaining = timers[WORKANA_TIMER_ID] ?? WORKANA_INTERVAL;
+  const workanaRemaining = getRemainingForTimer(WORKANA_TIMER_ID) ?? getNextWorkanaRemaining();
 
   const getPomodoroState = (taskId: string) => {
     const meta = pomodoroMeta[taskId];
     if (!meta) return undefined;
-    const timerVal = timers[`pomo-${taskId}`];
+    const timerVal = getRemainingForTimer(`pomo-${taskId}`);
     let remaining = timerVal ?? 0;
     if (meta.phase === 'overtime') remaining = overtimeCounters[taskId] ?? 0;
     if (meta.phase === 'idle' && !timerVal) remaining = POMODORO_DURATION;
@@ -372,7 +513,7 @@ const Index = () => {
         <WorkanaBar
           secondsUntilNext={workanaRemaining}
           elapsedSeconds={session.elapsedSeconds}
-          onEndDay={session.endDay}
+          onEndDay={handleEndDay}
           paused={workanaPaused}
           onTogglePause={handleToggleWorkanaPause}
         />
