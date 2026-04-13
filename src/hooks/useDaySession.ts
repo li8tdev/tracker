@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const SESSION_KEY = 'tracker-day-session';
+const SESSION_KEY = 'tracker-day-session'; // day session storage key
 
 interface SessionState {
   active: boolean;
