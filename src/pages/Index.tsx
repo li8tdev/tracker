@@ -13,7 +13,7 @@ import { DatePicker } from '@/components/DatePicker';
 import { DataActions } from '@/components/DataActions';
 import { StartDayScreen } from '@/components/StartDayScreen';
 import { WorkanaBar } from '@/components/WorkanaBar';
-import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid } from 'lucide-react';
+import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 
 const POMODORO_DURATION = 60 * 60; // 60 min
@@ -28,7 +28,7 @@ interface PomodoroMeta {
 }
 
 const Index = () => {
-  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, editTask } = useTasks();
+  const { tasks, allTasks, addTask, updateStatus, deleteTask, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar'>('tasks');
