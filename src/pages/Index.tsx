@@ -566,7 +566,7 @@ const Index = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 space-y-4">
                 <div className="bg-card border border-border rounded-2xl p-5">
-                  <TaskInput onAdd={addTask} defaultDate={selectedDate} />
+                  <TaskInput onAdd={addTask} onAddGroup={addGroup} defaultDate={selectedDate} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
