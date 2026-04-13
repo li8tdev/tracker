@@ -9,12 +9,13 @@ export function useTasks() {
     saveTasks(tasks);
   }, [tasks]);
 
-  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string) => {
+  const addTask = useCallback((title: string, pomodoroCount: number = 1, date?: string, scheduledTime?: string) => {
     const task: Task = {
       id: generateId(),
       title,
       status: 'todo',
       date: date ?? selectedDate,
+      scheduledTime,
       createdAt: new Date().toISOString(),
       pomodoroCount,
       pomodorosCompleted: 0,
@@ -35,7 +36,7 @@ export function useTasks() {
     }));
   }, []);
 
-  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string }) => {
+  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string }) => {
     setTasks(prev => prev.map(t => {
       if (t.id !== id) return t;
       return { ...t, ...updates };

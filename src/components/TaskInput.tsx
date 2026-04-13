@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Plus, Minus, CalendarDays } from 'lucide-react';
+import { Plus, Minus, CalendarDays, Clock } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Props {
-  onAdd: (title: string, pomodoroCount: number, date: string) => void;
+  onAdd: (title: string, pomodoroCount: number, date: string, scheduledTime?: string) => void;
   defaultDate: string;
 }
 
@@ -15,14 +15,16 @@ export function TaskInput({ onAdd, defaultDate }: Props) {
   const [pomodoros, setPomodoros] = useState(1);
   const [taskDate, setTaskDate] = useState<Date>(new Date(defaultDate + 'T12:00:00'));
   const [calOpen, setCalOpen] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!value.trim()) return;
     const dateStr = taskDate.toISOString().split('T')[0];
-    onAdd(value.trim(), pomodoros, dateStr);
+    onAdd(value.trim(), pomodoros, dateStr, scheduledTime || undefined);
     setValue('');
     setPomodoros(1);
+    setScheduledTime('');
   };
 
   return (
@@ -63,6 +65,20 @@ export function TaskInput({ onAdd, defaultDate }: Props) {
               />
             </PopoverContent>
           </Popover>
+          <div className="w-px h-4 bg-border" />
+          <div className="flex items-center gap-1.5">
+            <Clock size={12} className="text-muted-foreground" />
+            <input
+              type="time"
+              value={scheduledTime}
+              onChange={e => setScheduledTime(e.target.value)}
+              className="bg-transparent border-0 text-xs text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer"
+              title="Hora programada"
+            />
+            {scheduledTime && (
+              <button type="button" onClick={() => setScheduledTime('')} className="text-[10px] text-muted-foreground hover:text-destructive">✕</button>
+            )}
+          </div>
         </div>
       </div>
       <button
