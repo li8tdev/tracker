@@ -194,7 +194,7 @@ const Index = () => {
         if (remaining <= 0) return null;
         return { id: timer.id, remaining, running: timer.running && remaining > 0, type: timer.type };
       })
-      .filter((entry): entry is { id: string; remaining: number; running: boolean; type: string } => entry !== null);
+      .filter((entry): entry is { id: string; remaining: number; running: boolean; type: PersistedTimer['type'] } => entry !== null);
 
     if (Object.keys(restoredMeta).length > 0) {
       setPomodoroMeta(prev => ({ ...prev, ...restoredMeta }));
