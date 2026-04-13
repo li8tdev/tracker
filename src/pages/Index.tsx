@@ -544,15 +544,24 @@ const Index = () => {
                 <LayoutGrid size={13} />
                 Tareas
               </button>
-              <button
-                onClick={() => setActiveTab('calendar')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  activeTab === 'calendar' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <CalendarDays size={13} />
-                Calendario
-              </button>
+               <button
+                 onClick={() => setActiveTab('calendar')}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                   activeTab === 'calendar' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                 }`}
+               >
+                 <CalendarDays size={13} />
+                 Calendario
+               </button>
+               <button
+                 onClick={() => setActiveTab('ram')}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                   activeTab === 'ram' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                 }`}
+               >
+                 <Cpu size={13} />
+                 RAM
+               </button>
             </div>
             <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
             <DataActions tasks={allTasks} onImport={setTasks} />
