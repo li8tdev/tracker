@@ -115,15 +115,17 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
               <div className="w-px h-4 bg-border" />
             </>
           )}
-          <button
-            type="button"
-            onClick={() => setIsDaily(d => !d)}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${isDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-            title="Se repite todos los días"
-          >
-            <Repeat size={11} />
-            Diario
-          </button>
+          {mode === 'task' && (
+            <button
+              type="button"
+              onClick={() => setIsDaily(d => !d)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${isDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+              title="Se repite todos los días"
+            >
+              <Repeat size={11} />
+              Diario
+            </button>
+          )}
         </div>
       </div>
       <button

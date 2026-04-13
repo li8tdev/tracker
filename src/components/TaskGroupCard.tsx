@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/lib/storage';
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Repeat, Minus } from 'lucide-react';
+import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2, Check, X, Plus, MoreHorizontal, Minus, Clock, CalendarDays, Repeat } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { TaskCard, PomodoroPhase } from '@/components/TaskCard';
 
 interface PomodoroState {
@@ -15,9 +18,9 @@ interface PomodoroState {
 interface Props {
   group: TaskGroup;
   tasks: Task[];
-  onEditGroup: (id: string, updates: { name?: string; isDaily?: boolean }) => void;
+  onEditGroup: (id: string, updates: { name?: string }) => void;
   onDeleteGroup: (id: string) => void;
-  onAddSubtask: (title: string, pomodoroCount: number, groupId: string) => void;
+  onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
   onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
@@ -42,6 +45,10 @@ export function TaskGroupCard({
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newPomodoros, setNewPomodoros] = useState(1);
+  const [newTime, setNewTime] = useState('');
+  const [newDate, setNewDate] = useState<Date>(new Date(group.date + 'T12:00:00'));
+  const [newDaily, setNewDaily] = useState(false);
+  const [newCalOpen, setNewCalOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
   const done = tasks.filter(t => t.status === 'done').length;
@@ -59,14 +66,13 @@ export function TaskGroupCard({
   const handleAddSubtask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    onAddSubtask(newTitle.trim(), newPomodoros, group.id);
+    const dateStr = newDate.toISOString().split('T')[0];
+    onAddSubtask(newTitle.trim(), newPomodoros, group.id, dateStr, newTime || undefined, newDaily || undefined);
     setNewTitle('');
     setNewPomodoros(1);
+    setNewTime('');
+    setNewDaily(false);
     setAdding(false);
-  };
-
-  const toggleDaily = () => {
-    onEditGroup(group.id, { isDaily: !group.isDaily });
   };
 
   return (
@@ -100,11 +106,6 @@ export function TaskGroupCard({
           )}
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {group.isDaily && (
-              <span className="text-[10px] text-accent flex items-center gap-0.5">
-                <Repeat size={9} />
-              </span>
-            )}
             <span className="text-[10px] text-muted-foreground font-mono">
               {done}/{total}
             </span>
@@ -133,12 +134,6 @@ export function TaskGroupCard({
                   <Pencil size={12} /> Editar
                 </button>
                 <button
-                  onClick={() => { toggleDaily(); setShowActions(false); }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md transition-colors ${group.isDaily ? 'bg-accent/15 text-accent' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
-                >
-                  <Repeat size={12} /> {group.isDaily ? 'Quitar diario' : 'Diario'}
-                </button>
-                <button
                   onClick={() => { onDeleteGroup(group.id); setShowActions(false); }}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                 >
@@ -149,7 +144,6 @@ export function TaskGroupCard({
           </div>
         </div>
 
-        {/* Progress bar */}
         {total > 0 && (
           <div className="px-2.5 pb-1">
             <div className="w-full h-1 rounded-full bg-secondary overflow-hidden">
@@ -184,23 +178,53 @@ export function TaskGroupCard({
             })}
 
             {adding ? (
-              <form onSubmit={handleAddSubtask} className="flex flex-wrap items-center gap-1.5 p-2 ml-4">
+              <form onSubmit={handleAddSubtask} className="p-2 ml-4 space-y-2">
                 <input
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
                   placeholder="Subtarea..."
-                  className="flex-1 min-w-0 bg-background border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
                   autoFocus
                 />
-                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
-                  🍅
-                  <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
-                  <span className="w-3 text-center">{newPomodoros}</span>
-                  <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
-                  <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                    🍅
+                    <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
+                    <span className="w-3 text-center">{newPomodoros}</span>
+                    <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                  </div>
+                  <Popover open={newCalOpen} onOpenChange={setNewCalOpen}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
+                        <CalendarDays size={10} />
+                        {format(newDate, "d MMM", { locale: es })}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={newDate} onSelect={d => { if (d) { setNewDate(d); setNewCalOpen(false); } }} className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                  <div className="flex items-center gap-1">
+                    <Clock size={10} className="text-muted-foreground" />
+                    <input
+                      type="time"
+                      value={newTime}
+                      onChange={e => setNewTime(e.target.value)}
+                      className="bg-transparent border-0 text-[10px] text-muted-foreground hover:text-foreground focus:outline-none w-[3.5rem]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNewDaily(d => !d)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${newDaily ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                  >
+                    <Repeat size={9} />
+                    Diario
+                  </button>
+                  <div className="flex gap-1 ml-auto shrink-0">
+                    <button type="submit" className="w-6 h-6 flex items-center justify-center rounded-md bg-accent/10 text-accent hover:bg-accent/20"><Check size={11} /></button>
+                    <button type="button" onClick={() => setAdding(false)} className="w-6 h-6 flex items-center justify-center rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
+                  </div>
                 </div>
               </form>
             ) : (
