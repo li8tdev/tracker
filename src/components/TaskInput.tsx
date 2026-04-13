@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, CalendarDays } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface Props {
-  onAdd: (title: string, pomodoroCount: number) => void;
+  onAdd: (title: string, pomodoroCount: number, date: string) => void;
+  defaultDate: string;
 }
 
-export function TaskInput({ onAdd }: Props) {
+export function TaskInput({ onAdd, defaultDate }: Props) {
   const [value, setValue] = useState('');
   const [pomodoros, setPomodoros] = useState(1);
+  const [taskDate, setTaskDate] = useState<Date>(new Date(defaultDate + 'T12:00:00'));
+  const [calOpen, setCalOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!value.trim()) return;
-    onAdd(value.trim(), pomodoros);
+    const dateStr = taskDate.toISOString().split('T')[0];
+    onAdd(value.trim(), pomodoros, dateStr);
     setValue('');
     setPomodoros(1);
   };
@@ -26,26 +34,35 @@ export function TaskInput({ onAdd }: Props) {
           placeholder="Agregar nueva tarea..."
           className="w-full bg-secondary/50 border-0 rounded-lg px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
         />
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Pomodoros:</span>
-          <button
-            type="button"
-            onClick={() => setPomodoros(p => Math.max(1, p - 1))}
-            className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors"
-          >
-            <Minus size={12} />
-          </button>
-          <span className="text-sm font-mono font-semibold w-6 text-center">{pomodoros}</span>
-          <button
-            type="button"
-            onClick={() => setPomodoros(p => Math.min(10, p + 1))}
-            className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors"
-          >
-            <Plus size={12} />
-          </button>
-          <span className="text-xs text-muted-foreground ml-1">
-            ({pomodoros * 60} min + {(pomodoros - 1) * 10} min descanso)
-          </span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Pomodoros:</span>
+            <button type="button" onClick={() => setPomodoros(p => Math.max(1, p - 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+              <Minus size={12} />
+            </button>
+            <span className="text-sm font-mono font-semibold w-6 text-center">{pomodoros}</span>
+            <button type="button" onClick={() => setPomodoros(p => Math.min(10, p + 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+              <Plus size={12} />
+            </button>
+            <span className="text-xs text-muted-foreground">({pomodoros * 60} min)</span>
+          </div>
+          <div className="w-px h-4 bg-border" />
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button type="button" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <CalendarDays size={12} />
+                {format(taskDate, "d MMM yyyy", { locale: es })}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={taskDate}
+                onSelect={(d) => { if (d) { setTaskDate(d); setCalOpen(false); } }}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       <button
