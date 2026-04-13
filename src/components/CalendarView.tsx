@@ -6,6 +6,8 @@ import { Circle, Clock, CheckCircle2, Repeat, Layers } from 'lucide-react';
 interface Props {
   allTasks: Task[];
   allGroups?: TaskGroup[];
+  selectedDate?: string;
+  onDateChange?: (date: string) => void;
 }
 
 const statusIcons: Record<string, typeof Circle> = {
