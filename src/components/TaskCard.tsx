@@ -204,6 +204,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
                   <button onClick={() => onPomodoroStart?.(task.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-accent/10 text-accent transition-colors" title="Iniciar"><Play size={11} /></button>
                 )}
                 <button onClick={() => onPomodoroReset?.(task.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground transition-colors" title="Reiniciar"><RotateCcw size={11} /></button>
+                <button onClick={() => onFinishTask?.(task.id)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-success/10 text-success transition-colors" title="Terminar tarea"><CheckCircle2 size={11} /></button>
               </div>
             </div>
           )}
@@ -245,9 +246,14 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
 
           {(phase === 'all_done' || phase === 'overtime') && (
             <div className="bg-destructive/5 border border-destructive/15 rounded-md p-2.5 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-destructive">
-                <AlertTriangle size={12} />
-                <span className="text-[11px] font-semibold">¡{task.pomodoroCount} pomodoros completados!</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-destructive">
+                  <AlertTriangle size={12} />
+                  <span className="text-[11px] font-semibold">¡Pomodoros completados!</span>
+                </div>
+                <button onClick={() => onFinishTask?.(task.id)} className="w-7 h-7 flex items-center justify-center rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors" title="Terminar tarea">
+                  <CheckCircle2 size={14} />
+                </button>
               </div>
               {phase === 'overtime' && (
                 <div className="flex items-center gap-1.5">
@@ -256,7 +262,6 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
                   <span className="text-[10px] text-muted-foreground">extra</span>
                 </div>
               )}
-              <p className="text-[9px] text-muted-foreground">El tiempo extra se registra en estadísticas.</p>
             </div>
           )}
         </div>
