@@ -174,15 +174,56 @@ const Index = () => {
     setPomodoroMeta(prev => ({ ...prev, [taskId]: { phase: 'working', currentPomodoro: nextPom } }));
   }, [start, pomodoroMeta]);
 
+  // Finish task: calculate actual work time and mark done
+  const handleFinishTask = useCallback((taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const meta = pomodoroMeta[taskId];
+    const timerVal = timers[`pomo-${taskId}`];
+
+    // Completed pomodoros work time (no breaks)
+    let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
+
+    // Add elapsed time in current pomodoro if working/paused
+    if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
+      workSeconds += POMODORO_DURATION - timerVal;
+    }
+
+    // Add overtime
+    const ot = overtimeCounters[taskId] ?? 0;
+    workSeconds += ot;
+
+    setTotalWork(taskId, workSeconds);
+
+    // Cleanup
+    stopOvertime(taskId);
+    remove(`pomo-${taskId}`);
+    setPomodoroMeta(prev => { const n = { ...prev }; delete n[taskId]; return n; });
+    updateStatus(taskId, 'done');
+    toast.success('✅ ¡Tarea terminada!', { description: `Tiempo de trabajo: ${Math.floor(workSeconds / 3600)}h ${Math.floor((workSeconds % 3600) / 60)}m` });
+  }, [tasks, pomodoroMeta, timers, overtimeCounters, setTotalWork, stopOvertime, remove, updateStatus]);
+
   // Stop overtime when task status changes to done
   const handleStatusChange = useCallback((id: string, status: string) => {
     if (status === 'done') {
+      // Calculate work time if not already set via finish button
+      const task = tasks.find(t => t.id === id);
+      if (task && task.totalWorkSeconds === 0) {
+        const meta = pomodoroMeta[id];
+        let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
+        const timerVal = timers[`pomo-${id}`];
+        if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
+          workSeconds += POMODORO_DURATION - timerVal;
+        }
+        workSeconds += overtimeCounters[id] ?? 0;
+        if (workSeconds > 0) setTotalWork(id, workSeconds);
+      }
       stopOvertime(id);
       remove(`pomo-${id}`);
       setPomodoroMeta(prev => { const n = { ...prev }; delete n[id]; return n; });
     }
     updateStatus(id, status as any);
-  }, [updateStatus, stopOvertime, remove]);
+  }, [updateStatus, stopOvertime, remove, tasks, pomodoroMeta, timers, overtimeCounters, setTotalWork]);
 
   if (!session.active) {
     return <StartDayScreen onStart={handleStartDay} />;
