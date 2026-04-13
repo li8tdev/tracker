@@ -229,8 +229,12 @@ export function TaskGroupCard({
   const handlePlayPause = () => {
     if (groupPhase === 'working') {
       onPomodoroStop?.(group.id);
+      // Pause: set in_progress tasks back to todo
+      tasks.filter(t => t.status === 'in_progress').forEach(t => onStatusChange(t.id, 'todo'));
     } else {
       onPomodoroStart?.(group.id);
+      // Play: set all non-done tasks to in_progress
+      tasks.filter(t => t.status === 'todo').forEach(t => onStatusChange(t.id, 'in_progress'));
     }
   };
 
