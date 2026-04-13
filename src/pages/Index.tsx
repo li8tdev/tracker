@@ -244,6 +244,9 @@ const Index = () => {
     else break;
   }
 
+  // Total work time today (completed tasks + active timers)
+  const todayWorkSeconds = tasks.reduce((sum, t) => sum + (t.totalWorkSeconds ?? 0), 0);
+
   const workanaRemaining = timers[WORKANA_TIMER_ID] ?? WORKANA_INTERVAL;
 
   const getPomodoroState = (taskId: string) => {
