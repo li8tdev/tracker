@@ -265,28 +265,33 @@ const Index = () => {
 
   // Update browser tab title with active timer
   useEffect(() => {
+    const fmt = (secs: number) => `${Math.floor(secs / 60).toString().padStart(2, '0')}:${(secs % 60).toString().padStart(2, '0')}`;
+    
+    // Check individual tasks
     const activeTask = tasks.find(t => t.status === 'in_progress' && pomodoroMeta[t.id]?.phase === 'working');
     if (activeTask) {
       const secs = timers[`pomo-${activeTask.id}`];
-      if (secs !== undefined) {
-        const m = Math.floor(secs / 60);
-        const s = secs % 60;
-        document.title = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - ${activeTask.title}`;
-        return;
-      }
+      if (secs !== undefined) { document.title = `${fmt(secs)} - ${activeTask.title}`; return; }
     }
     const breakingTask = tasks.find(t => t.status === 'in_progress' && pomodoroMeta[t.id]?.phase === 'breaking');
     if (breakingTask) {
       const secs = timers[`pomo-${breakingTask.id}`];
-      if (secs !== undefined) {
-        const m = Math.floor(secs / 60);
-        const s = secs % 60;
-        document.title = `☕ ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} - Descanso`;
-        return;
+      if (secs !== undefined) { document.title = `☕ ${fmt(secs)} - Descanso`; return; }
+    }
+    // Check daily groups
+    for (const g of groups) {
+      const phase = pomodoroMeta[g.id]?.phase;
+      if (phase === 'working' || phase === 'paused') {
+        const secs = timers[`pomo-${g.id}`];
+        if (secs !== undefined) { document.title = `${fmt(secs)} - ${g.name}`; return; }
+      }
+      if (phase === 'breaking') {
+        const secs = timers[`pomo-${g.id}`];
+        if (secs !== undefined) { document.title = `☕ ${fmt(secs)} - Descanso`; return; }
       }
     }
     document.title = 'Tracker';
-  }, [timers, tasks, pomodoroMeta]);
+  }, [timers, tasks, groups, pomodoroMeta]);
 
   // Workana timer init/restore
   useEffect(() => {
@@ -499,7 +504,7 @@ const Index = () => {
   const handleStatusChange = useCallback((id: string, status: string) => {
     if (status === 'done') {
       const task = tasks.find(t => t.id === id);
-      if (task && task.totalWorkSeconds === 0) {
+      if (task) {
         const meta = pomodoroMeta[id];
         let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
         const timerVal = getRemainingForTimer(`pomo-${id}`);
@@ -507,12 +512,19 @@ const Index = () => {
           workSeconds += POMODORO_DURATION - timerVal;
         }
         workSeconds += overtimeCounters[id] ?? 0;
-        if (workSeconds > 0) setTotalWork(id, workSeconds);
+        // If no timer was used, default to planned pomodoro time
+        if (workSeconds === 0) {
+          workSeconds = task.pomodoroCount * POMODORO_DURATION;
+        }
+        setTotalWork(id, workSeconds);
       }
       stopOvertime(id);
       remove(`pomo-${id}`);
       clearTimerState(`pomo-${id}`);
       setPomodoroMeta(prev => { const n = { ...prev }; delete n[id]; return n; });
+    } else {
+      // Uncompleting: reset work time
+      setTotalWork(id, 0);
     }
     updateStatus(id, status as any);
   }, [updateStatus, stopOvertime, remove, tasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork]);
