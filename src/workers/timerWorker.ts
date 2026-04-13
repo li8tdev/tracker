@@ -1,15 +1,13 @@
 // Web Worker for timers that don't pause on tab switch
-// Manages both pomodoro timers and the hourly Workana reminder
 
 interface TimerState {
   id: string;
-  remaining: number; // seconds
+  remaining: number;
   running: boolean;
-  type: 'pomodoro' | 'workana';
+  type: 'pomodoro' | 'workana' | 'break';
 }
 
 const timers = new Map<string, TimerState>();
-
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
 function startLoop() {
@@ -23,7 +21,6 @@ function startLoop() {
         self.postMessage({ type: 'TIMER_DONE', id: timer.id, timerType: timer.type });
       }
     });
-    // Send tick updates
     const updates: Record<string, number> = {};
     timers.forEach((t, id) => { updates[id] = t.remaining; });
     self.postMessage({ type: 'TICK', timers: updates });
@@ -61,6 +58,23 @@ self.onmessage = (e: MessageEvent) => {
     case 'REMOVE': {
       timers.delete(id);
       stopLoopIfIdle();
+      break;
+    }
+    case 'RESTORE_BATCH': {
+      // Restore multiple timers at once (for page reload)
+      const entries: Array<{ id: string; remaining: number; running: boolean; type: string }> = e.data.entries;
+      let hasAnyRunning = false;
+      entries.forEach(entry => {
+        if (entry.remaining > 0) {
+          timers.set(entry.id, { id: entry.id, remaining: entry.remaining, running: entry.running, type: (entry.type as any) || 'pomodoro' });
+          if (entry.running) hasAnyRunning = true;
+        }
+      });
+      if (hasAnyRunning) startLoop();
+      // Send immediate tick
+      const updates: Record<string, number> = {};
+      timers.forEach((t, tid) => { updates[tid] = t.remaining; });
+      self.postMessage({ type: 'TICK', timers: updates });
       break;
     }
   }
