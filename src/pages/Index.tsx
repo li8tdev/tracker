@@ -110,7 +110,32 @@ const Index = () => {
     return remainder === 0 ? WORKANA_INTERVAL : WORKANA_INTERVAL - remainder;
   }, [session.startedAt]);
 
-  const handleTimerDone = useCallback((id: string, timerType: string) => {
+  const startOvertime = useCallback((taskId: string) => {
+    if (overtimeIntervals.current[taskId]) clearInterval(overtimeIntervals.current[taskId]);
+    const startedAt = Date.now();
+    setOvertimeCounters(prev => ({ ...prev, [taskId]: 0 }));
+    const otStates = loadOvertimeStates();
+    otStates[taskId] = { startedAt, elapsedSeconds: 0, running: true };
+    saveOvertimeStates(otStates);
+    overtimeIntervals.current[taskId] = setInterval(() => {
+      setOvertimeCounters(prev => ({ ...prev, [taskId]: Math.floor((Date.now() - startedAt) / 1000) }));
+    }, 1000);
+    setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'overtime' } }));
+  }, []);
+
+  const stopOvertime = useCallback((taskId: string) => {
+    if (overtimeIntervals.current[taskId]) {
+      clearInterval(overtimeIntervals.current[taskId]);
+      delete overtimeIntervals.current[taskId];
+    }
+    const seconds = overtimeCounters[taskId] ?? 0;
+    if (seconds > 0) addOvertime(taskId, seconds);
+    setOvertimeCounters(prev => { const n = { ...prev }; delete n[taskId]; return n; });
+    const otStates = loadOvertimeStates();
+    delete otStates[taskId];
+    saveOvertimeStates(otStates);
+  }, [overtimeCounters, addOvertime]);
+
     if (timerType === 'workana') {
       clearTimerState(WORKANA_TIMER_ID);
       if (!sessionActiveRef.current || workanaPausedRef.current) return;
@@ -234,31 +259,6 @@ const Index = () => {
     };
   }, []);
 
-  const startOvertime = useCallback((taskId: string) => {
-    if (overtimeIntervals.current[taskId]) clearInterval(overtimeIntervals.current[taskId]);
-    const startedAt = Date.now();
-    setOvertimeCounters(prev => ({ ...prev, [taskId]: 0 }));
-    const otStates = loadOvertimeStates();
-    otStates[taskId] = { startedAt, elapsedSeconds: 0, running: true };
-    saveOvertimeStates(otStates);
-    overtimeIntervals.current[taskId] = setInterval(() => {
-      setOvertimeCounters(prev => ({ ...prev, [taskId]: Math.floor((Date.now() - startedAt) / 1000) }));
-    }, 1000);
-    setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'overtime' } }));
-  }, []);
-
-  const stopOvertime = useCallback((taskId: string) => {
-    if (overtimeIntervals.current[taskId]) {
-      clearInterval(overtimeIntervals.current[taskId]);
-      delete overtimeIntervals.current[taskId];
-    }
-    const seconds = overtimeCounters[taskId] ?? 0;
-    if (seconds > 0) addOvertime(taskId, seconds);
-    setOvertimeCounters(prev => { const n = { ...prev }; delete n[taskId]; return n; });
-    const otStates = loadOvertimeStates();
-    delete otStates[taskId];
-    saveOvertimeStates(otStates);
-  }, [overtimeCounters, addOvertime]);
 
   useEffect(() => { requestNotificationPermission(); }, []);
 
