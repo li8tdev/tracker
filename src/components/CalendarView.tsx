@@ -67,8 +67,19 @@ interface CalendarEntry {
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6);
 
-export function CalendarView({ allTasks, allGroups = [] }: Props) {
-  const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
+export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateChange }: Props) {
+  const externalDate = selectedDate ? new Date(selectedDate + 'T12:00:00') : undefined;
+  const [internalDay, setInternalDay] = useState<Date | undefined>(new Date());
+  const selectedDay = externalDate ?? internalDay;
+
+  const handleDaySelect = (day: Date | undefined) => {
+    if (day && onDateChange) {
+      onDateChange(day.toISOString().split('T')[0]);
+    } else {
+      setInternalDay(day);
+    }
+  };
+
   const selectedDateStr = selectedDay ? selectedDay.toISOString().split('T')[0] : '';
 
   // Build calendar entries: individual scheduled tasks + daily groups
