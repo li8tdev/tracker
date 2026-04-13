@@ -27,6 +27,7 @@ export function loadTasks(): Task[] {
       pomodoroCount: t.pomodoroCount ?? 1,
       pomodorosCompleted: t.pomodorosCompleted ?? 0,
       overtimeSeconds: t.overtimeSeconds ?? 0,
+      scheduledTime: t.scheduledTime ?? undefined,
     }));
   } catch {
     return [];
