@@ -50,6 +50,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
   const [editTitle, setEditTitle] = useState(task.title);
   const [editPomodoros, setEditPomodoros] = useState(task.pomodoroCount);
   const [editDate, setEditDate] = useState<Date>(new Date(task.date + 'T12:00:00'));
+  const [editTime, setEditTime] = useState(task.scheduledTime ?? '');
   const [calOpen, setCalOpen] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
@@ -57,6 +58,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
     setEditTitle(task.title);
     setEditPomodoros(task.pomodoroCount);
     setEditDate(new Date(task.date + 'T12:00:00'));
+    setEditTime(task.scheduledTime ?? '');
     setEditing(true);
     setShowActions(false);
   };
@@ -66,6 +68,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, pomodoroState
       title: editTitle.trim() || task.title,
       pomodoroCount: editPomodoros,
       date: editDate.toISOString().split('T')[0],
+      scheduledTime: editTime || undefined,
     });
     setEditing(false);
   };
