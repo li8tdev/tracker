@@ -6,6 +6,8 @@ import { Circle, Clock, CheckCircle2, Repeat, Layers } from 'lucide-react';
 interface Props {
   allTasks: Task[];
   allGroups?: TaskGroup[];
+  selectedDate?: string;
+  onDateChange?: (date: string) => void;
 }
 
 const statusIcons: Record<string, typeof Circle> = {
@@ -65,8 +67,19 @@ interface CalendarEntry {
 
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6);
 
-export function CalendarView({ allTasks, allGroups = [] }: Props) {
-  const [selectedDay, setSelectedDay] = useState<Date | undefined>(new Date());
+export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateChange }: Props) {
+  const externalDate = selectedDate ? new Date(selectedDate + 'T12:00:00') : undefined;
+  const [internalDay, setInternalDay] = useState<Date | undefined>(new Date());
+  const selectedDay = externalDate ?? internalDay;
+
+  const handleDaySelect = (day: Date | undefined) => {
+    if (day && onDateChange) {
+      onDateChange(day.toISOString().split('T')[0]);
+    } else {
+      setInternalDay(day);
+    }
+  };
+
   const selectedDateStr = selectedDay ? selectedDay.toISOString().split('T')[0] : '';
 
   // Build calendar entries: individual scheduled tasks + daily groups
@@ -225,7 +238,7 @@ export function CalendarView({ allTasks, allGroups = [] }: Props) {
         <Calendar
           mode="single"
           selected={selectedDay}
-          onSelect={setSelectedDay}
+          onSelect={handleDaySelect}
           className="p-3 pointer-events-auto"
           modifiers={modifiers}
           modifiersStyles={modifiersStyles}
