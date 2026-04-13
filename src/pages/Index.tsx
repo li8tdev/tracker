@@ -150,11 +150,10 @@ const Index = () => {
   const { timers, start, stop, remove, restore } = useTimer(handleTimerDone);
 
   const getRemainingForTimer = useCallback((timerId: string) => {
-    const liveRemaining = timers[timerId];
-    if (liveRemaining !== undefined) return liveRemaining;
-
     const savedTimer = loadTimerStates().find(timer => timer.id === timerId);
-    return savedTimer ? getRemainingFromTimer(savedTimer) : undefined;
+    if (savedTimer) return getRemainingFromTimer(savedTimer);
+
+    return timers[timerId];
   }, [timers]);
 
   // Restore timers on mount
@@ -399,8 +398,8 @@ const Index = () => {
   }, [allTasks, getRemainingForTimer, pomodoroMeta, start]);
 
   const handlePomodoroStop = useCallback((taskId: string) => {
-    stop(`pomo-${taskId}`);
     const remaining = Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION);
+    stop(`pomo-${taskId}`);
     upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration: remaining, startedAt: Date.now(), running: false, pausedRemaining: remaining });
     setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'paused' } }));
   }, [getRemainingForTimer, stop]);
