@@ -136,6 +136,7 @@ const Index = () => {
     saveOvertimeStates(otStates);
   }, [overtimeCounters, addOvertime]);
 
+  const handleTimerDone = useCallback((id: string, timerType: string) => {
     if (timerType === 'workana') {
       clearTimerState(WORKANA_TIMER_ID);
       if (!sessionActiveRef.current || workanaPausedRef.current) return;
