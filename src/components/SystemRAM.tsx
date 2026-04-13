@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Plus, X } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AlertTriangle, Plus, X, Trash2, Download, Upload } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface RAMLog {
   id: string;
