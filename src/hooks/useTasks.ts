@@ -20,6 +20,7 @@ export function useTasks() {
       pomodoroCount,
       pomodorosCompleted: 0,
       overtimeSeconds: 0,
+      totalWorkSeconds: 0,
     };
     setTasks(prev => [...prev, task]);
   }, [selectedDate]);
