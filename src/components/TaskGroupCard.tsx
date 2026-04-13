@@ -243,27 +243,27 @@ export function TaskGroupCard({
   return (
     <div className={`rounded-lg border transition-all overflow-hidden ${borderClass}`}>
       <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="flex items-center gap-2 p-2.5">
+        <div className="flex items-start gap-1.5 p-2.5">
           <CollapsibleTrigger asChild>
-            <button className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+            <button className="shrink-0 mt-0.5 text-muted-foreground hover:text-foreground transition-colors">
               {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
           </CollapsibleTrigger>
 
-          <FolderOpen size={14} className={allDone ? 'text-success' : isGroupActive ? 'text-warning' : 'text-accent'} />
+          <FolderOpen size={14} className={`shrink-0 mt-0.5 ${allDone ? 'text-success' : isGroupActive ? 'text-warning' : 'text-accent'}`} />
 
           {/* Play/Pause for daily groups */}
           {isDaily && !editing && !allDone && (groupPhase === 'idle' || groupPhase === 'working' || groupPhase === 'paused') && (
             <button
               onClick={handlePlayPause}
-              className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full transition-all ${
+              className={`shrink-0 w-5 h-5 flex items-center justify-center rounded-full transition-all ${
                 groupPhase === 'working'
                   ? 'bg-warning/15 text-warning hover:bg-warning/25'
                   : 'bg-accent/10 text-accent hover:bg-accent/20'
               }`}
               title={groupPhase === 'working' ? 'Pausar' : 'Iniciar'}
             >
-              {groupPhase === 'working' ? <Pause size={11} /> : <Play size={11} />}
+              {groupPhase === 'working' ? <Pause size={10} /> : <Play size={10} />}
             </button>
           )}
 
