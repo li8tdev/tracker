@@ -1,4 +1,4 @@
-import { Task } from '@/lib/storage';
+import { Task, getNowUTC5 } from '@/lib/storage';
 import { useMemo } from 'react';
 
 interface Props {
@@ -11,7 +11,7 @@ export function Analytics({ allTasks = [] }: Props) {
   const stats = useMemo(() => {
     const last7Days: string[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
+      const d = getNowUTC5();
       d.setDate(d.getDate() - i);
       last7Days.push(d.toISOString().split('T')[0]);
     }
@@ -30,7 +30,7 @@ export function Analytics({ allTasks = [] }: Props) {
     // Streak calculation
     let streak = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date();
+      const d = getNowUTC5();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
       const dayCompleted = safeTasks.filter(t => t.date === dateStr && t.status === 'done').length;
