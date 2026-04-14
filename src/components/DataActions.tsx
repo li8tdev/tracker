@@ -1,6 +1,6 @@
-import { useRef } from 'react';
-import { Download, Upload } from 'lucide-react';
-import { Task, exportData, importData } from '@/lib/storage';
+import { useRef, useState } from 'react';
+import { Download, Upload, Trash2 } from 'lucide-react';
+import { Task, exportData, importData, resetAllData } from '@/lib/storage';
 import { toast } from 'sonner';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
 
 export function DataActions({ tasks, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,6 +23,17 @@ export function DataActions({ tasks, onImport }: Props) {
       toast.error('Error al importar archivo');
     }
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleReset = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      setTimeout(() => setConfirmReset(false), 3000);
+      return;
+    }
+    resetAllData();
+    toast.success('Todos los datos han sido eliminados');
+    window.location.reload();
   };
 
   return (
@@ -37,6 +49,12 @@ export function DataActions({ tasks, onImport }: Props) {
         className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors text-muted-foreground"
       >
         <Upload size={13} /> Importar
+      </button>
+      <button
+        onClick={handleReset}
+        className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors ${confirmReset ? 'bg-destructive text-destructive-foreground' : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'}`}
+      >
+        <Trash2 size={13} /> {confirmReset ? '¿Confirmar?' : 'Formatear todo'}
       </button>
       <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
     </div>

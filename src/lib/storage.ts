@@ -94,8 +94,25 @@ export function importData(file: File): Promise<Task[]> {
   });
 }
 
+export function getNowUTC5(): Date {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc - 5 * 3600000);
+}
+
 export function getToday(): string {
-  return new Date().toISOString().split('T')[0];
+  return getNowUTC5().toISOString().split('T')[0];
+}
+
+export function resetAllData() {
+  const keys = ['productivity-tracker-tasks', 'productivity-tracker-groups', 'day-session', 'pomodoro-meta', 'timer-states', 'overtime-states', 'workana-paused'];
+  keys.forEach(k => localStorage.removeItem(k));
+  // Clear any other tracker keys
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith('productivity-tracker') || k.startsWith('timer-') || k.startsWith('pomodoro-')) {
+      localStorage.removeItem(k);
+    }
+  });
 }
 
 export function generateId(): string {
