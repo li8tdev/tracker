@@ -23,6 +23,7 @@ import { DataActions } from '@/components/DataActions';
 import { StartDayScreen } from '@/components/StartDayScreen';
 import { WorkanaBar } from '@/components/WorkanaBar';
 import { SystemRAM } from '@/components/SystemRAM';
+import { DailyStreakGrid } from '@/components/DailyStreakGrid';
 import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
 
