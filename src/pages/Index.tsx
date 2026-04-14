@@ -459,9 +459,15 @@ const Index = () => {
       const groupTasks = allTasks.filter(t => t.groupId === group.id);
       const meta = pomodoroMeta[taskId];
       const pomCount = group.pomodoroCount ?? 1;
-      let workSeconds = (meta?.currentPomodoro ?? 0) * POMODORO_DURATION;
+      
+      // Calculate completed pomodoros correctly based on phase
+      const currentPom = meta?.currentPomodoro ?? 0;
+      const isPartial = meta && (meta.phase === 'working' || meta.phase === 'paused');
+      const completedPomodoros = isPartial ? Math.max(0, currentPom - 1) : currentPom;
+      
+      let workSeconds = completedPomodoros * POMODORO_DURATION;
       const timerVal = getRemainingForTimer(`pomo-${taskId}`);
-      if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
+      if (isPartial && timerVal !== undefined) {
         workSeconds += POMODORO_DURATION - timerVal;
       }
       workSeconds += overtimeCounters[taskId] ?? 0;
