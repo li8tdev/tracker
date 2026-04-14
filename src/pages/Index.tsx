@@ -545,11 +545,23 @@ const Index = () => {
   const handleDrop = useCallback((e: React.DragEvent, targetStatus: TaskStatus) => {
     e.preventDefault();
     setDragOverColumn(null);
-    const taskId = e.dataTransfer.getData('text/plain');
-    if (!taskId) return;
-    const task = allTasks.find(t => t.id === taskId);
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+    // Group drag
+    if (data.startsWith('group:')) {
+      const groupId = data.replace('group:', '');
+      const groupTasks = allTasks.filter(t => t.groupId === groupId);
+      groupTasks.forEach(t => {
+        if (t.status !== targetStatus) {
+          handleStatusChange(t.id, targetStatus);
+        }
+      });
+      return;
+    }
+    // Task drag
+    const task = allTasks.find(t => t.id === data);
     if (!task || task.status === targetStatus) return;
-    handleStatusChange(taskId, targetStatus);
+    handleStatusChange(data, targetStatus);
   }, [allTasks, handleStatusChange]);
 
   const handleDragOver = useCallback((e: React.DragEvent, status: TaskStatus) => {
