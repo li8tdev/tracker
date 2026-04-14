@@ -131,7 +131,7 @@ export function DailyStreakGrid({ allTasks, allGroups }: Props) {
         <span className="text-xs text-muted-foreground ml-auto">Últimas 12 semanas</span>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {dailyItems.map(item => (
           <div key={item.id} className="space-y-2">
             <div className="flex items-center justify-between">
