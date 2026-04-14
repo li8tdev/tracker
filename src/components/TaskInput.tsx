@@ -6,8 +6,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Props {
-  onAdd: (title: string, pomodoroCount: number, date: string, scheduledTime?: string, groupId?: string, isDaily?: boolean) => void;
-  onAddGroup?: (name: string, date?: string, isDaily?: boolean, scheduledTime?: string, pomodoroCount?: number) => void;
+  onAdd: (title: string, pomodoroCount: number, date: string, scheduledTime?: string, groupId?: string, isDaily?: boolean, customTimeMinutes?: number) => void;
+  onAddGroup?: (name: string, date?: string, isDaily?: boolean, scheduledTime?: string, pomodoroCount?: number, customTimeMinutes?: number) => void;
   defaultDate: string;
 }
 
@@ -21,6 +21,10 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
   const [isDaily, setIsDaily] = useState(false);
   const [groupPomodoros, setGroupPomodoros] = useState(1);
   const [groupTime, setGroupTime] = useState('');
+  const [timerMode, setTimerMode] = useState<'pomodoro' | 'custom'>('pomodoro');
+  const [customMinutes, setCustomMinutes] = useState(30);
+  const [groupTimerMode, setGroupTimerMode] = useState<'pomodoro' | 'custom'>('pomodoro');
+  const [groupCustomMinutes, setGroupCustomMinutes] = useState(30);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,21 +36,26 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
         dateStr,
         isDaily || undefined,
         isDaily ? (groupTime || undefined) : undefined,
-        isDaily ? groupPomodoros : undefined,
+        isDaily ? (groupTimerMode === 'pomodoro' ? groupPomodoros : 1) : undefined,
+        isDaily && groupTimerMode === 'custom' ? groupCustomMinutes : undefined,
       );
       setValue('');
       setMode('task');
       setIsDaily(false);
       setGroupTime('');
       setGroupPomodoros(1);
+      setGroupTimerMode('pomodoro');
+      setGroupCustomMinutes(30);
       return;
     }
     const dateStr = taskDate.toISOString().split('T')[0];
-    onAdd(value.trim(), pomodoros, dateStr, scheduledTime || undefined, undefined, isDaily || undefined);
+    onAdd(value.trim(), timerMode === 'pomodoro' ? pomodoros : 1, dateStr, scheduledTime || undefined, undefined, isDaily || undefined, timerMode === 'custom' ? customMinutes : undefined);
     setValue('');
     setPomodoros(1);
     setScheduledTime('');
     setIsDaily(false);
+    setTimerMode('pomodoro');
+    setCustomMinutes(30);
   };
 
   return (
@@ -80,16 +89,35 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
         <div className="flex items-center gap-3 flex-wrap">
           {mode === 'task' && (
             <>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Pomodoros:</span>
-                <button type="button" onClick={() => setPomodoros(p => Math.max(1, p - 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
-                  <Minus size={12} />
-                </button>
-                <span className="text-sm font-mono font-semibold w-6 text-center">{pomodoros}</span>
-                <button type="button" onClick={() => setPomodoros(p => Math.min(10, p + 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
-                  <Plus size={12} />
-                </button>
-                <span className="text-xs text-muted-foreground">({pomodoros * 60} min)</span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex bg-secondary rounded-md p-0.5">
+                  <button type="button" onClick={() => setTimerMode('pomodoro')} className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${timerMode === 'pomodoro' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>🍅</button>
+                  <button type="button" onClick={() => setTimerMode('custom')} className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${timerMode === 'custom' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>⏱</button>
+                </div>
+                {timerMode === 'pomodoro' ? (
+                  <div className="flex items-center gap-1.5">
+                    <button type="button" onClick={() => setPomodoros(p => Math.max(1, p - 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+                      <Minus size={12} />
+                    </button>
+                    <span className="text-sm font-mono font-semibold w-6 text-center">{pomodoros}</span>
+                    <button type="button" onClick={() => setPomodoros(p => Math.min(10, p + 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+                      <Plus size={12} />
+                    </button>
+                    <span className="text-xs text-muted-foreground">({pomodoros * 60} min)</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={1}
+                      max={480}
+                      value={customMinutes}
+                      onChange={e => setCustomMinutes(Math.max(1, Math.min(480, parseInt(e.target.value) || 1)))}
+                      className="w-14 bg-secondary/50 border border-border rounded px-1.5 py-0.5 text-xs font-mono text-center focus:outline-none focus:ring-1 focus:ring-accent/30"
+                    />
+                    <span className="text-xs text-muted-foreground">min</span>
+                  </div>
+                )}
               </div>
               <div className="w-px h-4 bg-border" />
               <Popover open={calOpen} onOpenChange={setCalOpen}>
@@ -159,16 +187,35 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
                     />
                   </div>
                   <div className="w-px h-4 bg-border" />
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">🍅</span>
-                    <button type="button" onClick={() => setGroupPomodoros(p => Math.max(1, p - 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
-                      <Minus size={12} />
-                    </button>
-                    <span className="text-sm font-mono font-semibold w-6 text-center">{groupPomodoros}</span>
-                    <button type="button" onClick={() => setGroupPomodoros(p => Math.min(10, p + 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
-                      <Plus size={12} />
-                    </button>
-                    <span className="text-xs text-muted-foreground">({groupPomodoros * 60} min)</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex bg-secondary rounded-md p-0.5">
+                      <button type="button" onClick={() => setGroupTimerMode('pomodoro')} className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${groupTimerMode === 'pomodoro' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>🍅</button>
+                      <button type="button" onClick={() => setGroupTimerMode('custom')} className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${groupTimerMode === 'custom' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>⏱</button>
+                    </div>
+                    {groupTimerMode === 'pomodoro' ? (
+                      <div className="flex items-center gap-1">
+                        <button type="button" onClick={() => setGroupPomodoros(p => Math.max(1, p - 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+                          <Minus size={12} />
+                        </button>
+                        <span className="text-sm font-mono font-semibold w-6 text-center">{groupPomodoros}</span>
+                        <button type="button" onClick={() => setGroupPomodoros(p => Math.min(10, p + 1))} className="p-1 rounded hover:bg-secondary text-muted-foreground transition-colors">
+                          <Plus size={12} />
+                        </button>
+                        <span className="text-xs text-muted-foreground">({groupPomodoros * 60} min)</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={1}
+                          max={480}
+                          value={groupCustomMinutes}
+                          onChange={e => setGroupCustomMinutes(Math.max(1, Math.min(480, parseInt(e.target.value) || 1)))}
+                          className="w-14 bg-secondary/50 border border-border rounded px-1.5 py-0.5 text-xs font-mono text-center focus:outline-none focus:ring-1 focus:ring-accent/30"
+                        />
+                        <span className="text-xs text-muted-foreground">min</span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
