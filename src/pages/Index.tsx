@@ -722,6 +722,26 @@ const Index = () => {
                 </div>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <TaskInput onAdd={addTask} onAddGroup={addGroup} defaultDate={selectedDate} />
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <Analytics allTasks={allTasks} />
+              </div>
+            </div>
+
+            <DailyStreakGrid allTasks={allTasks} allGroups={allGroups} />
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatsCard label="Total hoy" value={allDayTasks.length} icon={ListTodo} />
+              <StatsCard label="Completadas" value={allDayDone.length} icon={CheckCircle2} />
+              <StatsCard label="Tasa de éxito" value={`${completionRate}%`} icon={Target} accent />
+              <StatsCard label="Racha" value={`${streak}d`} icon={Flame} />
+              <StatsCard label="Trabajo hoy" value={`${Math.floor(todayWorkSeconds / 3600)}h${Math.floor((todayWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
+              <StatsCard label="Trabajo total" value={`${Math.floor(totalWorkSeconds / 3600)}h${Math.floor((totalWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
+            </div>
           </>
         ) : activeTab === 'calendar' ? (
           <CalendarView allTasks={allTasks} allGroups={allGroups} selectedDate={selectedDate} onDateChange={setSelectedDate} />
