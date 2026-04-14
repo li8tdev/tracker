@@ -1,14 +1,15 @@
 import { useRef, useState } from 'react';
 import { Download, Upload, Trash2 } from 'lucide-react';
-import { Task, exportData, importData, resetAllData } from '@/lib/storage';
+import { Task, TaskGroup, exportData, importData, resetAllData } from '@/lib/storage';
 import { toast } from 'sonner';
 
 interface Props {
   tasks: Task[];
-  onImport: (tasks: Task[]) => void;
+  groups: TaskGroup[];
+  onImport: (tasks: Task[], groups: TaskGroup[]) => void;
 }
 
-export function DataActions({ tasks, onImport }: Props) {
+export function DataActions({ tasks, groups, onImport }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -17,8 +18,8 @@ export function DataActions({ tasks, onImport }: Props) {
     if (!file) return;
     try {
       const imported = await importData(file);
-      onImport(imported);
-      toast.success(`${imported.length} tareas importadas`);
+      onImport(imported.tasks, imported.groups);
+      toast.success(`${imported.tasks.length} tareas y ${imported.groups.length} grupos importados`);
     } catch {
       toast.error('Error al importar archivo');
     }
@@ -39,7 +40,7 @@ export function DataActions({ tasks, onImport }: Props) {
   return (
     <div className="flex gap-2">
       <button
-        onClick={() => exportData(tasks)}
+        onClick={() => exportData(tasks, groups)}
         className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors text-muted-foreground"
       >
         <Download size={13} /> Exportar
