@@ -499,9 +499,9 @@ const Index = () => {
     const ot = overtimeCounters[taskId] ?? 0;
     workSeconds += ot;
 
-    // If no timer was used, default to planned pomodoro time
-    if (workSeconds === 0) {
-      workSeconds = task.pomodoroCount * POMODORO_DURATION;
+    // If no timer was used, calculate from actual startedAt time
+    if (workSeconds === 0 && task.startedAt) {
+      workSeconds = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
     }
 
     setTotalWork(taskId, workSeconds);
