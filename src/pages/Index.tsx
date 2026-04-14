@@ -680,7 +680,7 @@ const Index = () => {
                </button>
             </div>
             <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
-            <DataActions tasks={allTasks} onImport={setTasks} />
+            <DataActions tasks={allTasks} groups={allGroups} onImport={(t, g) => { setTasks(t); setGroups(g); }} />
           </div>
         </div>
 
