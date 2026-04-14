@@ -11,7 +11,7 @@ export function Analytics({ allTasks = [] }: Props) {
   const stats = useMemo(() => {
     const last7Days: string[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
+      const d = getNowUTC5();
       d.setDate(d.getDate() - i);
       last7Days.push(d.toISOString().split('T')[0]);
     }
