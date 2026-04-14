@@ -1,4 +1,5 @@
 import { Rocket, Zap, Target, Flame, Coffee } from 'lucide-react';
+import { getNowUTC5 } from '@/lib/storage';
 
 const motivationMessages = [
   { icon: Rocket, title: "¡Es hora de conquistar el día!", text: "Cada tarea completada te acerca a tu versión más productiva." },
