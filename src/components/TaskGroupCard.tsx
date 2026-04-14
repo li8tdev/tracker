@@ -24,6 +24,7 @@ interface Props {
   onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
+  onDuplicate?: (id: string) => void;
   onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
   getPomodoroState?: (taskId: string) => PomodoroState | undefined;
   onPomodoroStart?: (id: string) => void;
@@ -160,7 +161,7 @@ function DailyGroupPomodoroControls({
 
 export function TaskGroupCard({
   group, tasks, onEditGroup, onDeleteGroup, onDuplicateGroup, onAddSubtask,
-  onStatusChange, onDelete, onEdit,
+  onStatusChange, onDelete, onDuplicate, onEdit,
   getPomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset,
   onStartBreak, onContinueNext, onFinishTask,
 }: Props) {
@@ -426,6 +427,7 @@ export function TaskGroupCard({
                     task={t}
                     onStatusChange={onStatusChange}
                     onDelete={onDelete}
+                    onDuplicate={onDuplicate}
                     onEdit={onEdit}
                     pomodoroState={pomState}
                     onPomodoroStart={onPomodoroStart}
