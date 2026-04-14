@@ -44,7 +44,19 @@ function formatTime(seconds: number) {
 function SimpleSubtask({ task, onStatusChange }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void }) {
   const isDone = task.status === 'done';
   return (
-    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors ${isDone ? 'opacity-50' : ''}`}>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'move';
+        (e.currentTarget as HTMLElement).style.opacity = '0.4';
+      }}
+      onDragEnd={(e) => {
+        (e.currentTarget as HTMLElement).style.opacity = '';
+      }}
+      className={`flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''}`}
+    >
       <button
         onClick={() => onStatusChange(task.id, isDone ? 'todo' : 'done')}
         className={`shrink-0 ${isDone ? 'text-success' : 'text-muted-foreground'} hover:scale-110 transition-transform`}
@@ -259,6 +271,10 @@ export function TaskGroupCard({
     <div
       draggable
       onDragStart={(e) => {
+        // Only start group drag if the event originated from this element, not a subtask
+        if ((e.target as HTMLElement).closest('[draggable]') !== e.currentTarget) {
+          return;
+        }
         e.dataTransfer.setData('text/plain', `group:${group.id}`);
         e.dataTransfer.effectAllowed = 'move';
         (e.currentTarget as HTMLElement).style.opacity = '0.5';
