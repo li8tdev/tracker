@@ -68,8 +68,8 @@ export function saveTasks(tasks: Task[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }
 
-export function exportData(tasks: Task[]) {
-  const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
+export function exportData(tasks: Task[], groups: TaskGroup[]) {
+  const blob = new Blob([JSON.stringify({ tasks, groups }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -78,13 +78,29 @@ export function exportData(tasks: Task[]) {
   URL.revokeObjectURL(url);
 }
 
-export function importData(file: File): Promise<Task[]> {
+export function importData(file: File): Promise<{ tasks: Task[]; groups: TaskGroup[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const tasks = JSON.parse(e.target?.result as string);
-        if (Array.isArray(tasks)) resolve(tasks);
+        const data = JSON.parse(e.target?.result as string);
+        // New format: { tasks, groups }
+        if (data && !Array.isArray(data) && Array.isArray(data.tasks)) {
+          resolve({ tasks: data.tasks, groups: data.groups ?? [] });
+        }
+        // Legacy format: plain array of tasks
+        else if (Array.isArray(data)) {
+          // Auto-detect groups from groupId references
+          const groupIds = new Set<string>();
+          data.forEach((t: any) => { if (t.groupId) groupIds.add(t.groupId); });
+          const inferredGroups: TaskGroup[] = Array.from(groupIds).map(id => ({
+            id,
+            name: `Grupo importado`,
+            date: data.find((t: any) => t.groupId === id)?.date ?? getToday(),
+            createdAt: new Date().toISOString(),
+          }));
+          resolve({ tasks: data, groups: inferredGroups });
+        }
         else reject(new Error('Invalid format'));
       } catch {
         reject(new Error('Invalid JSON'));

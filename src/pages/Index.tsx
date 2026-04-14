@@ -52,7 +52,7 @@ function getTaskIdFromTimerId(timerId: string) {
 }
 
 const Index = () => {
-  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks } = useTasks();
+  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar' | 'ram'>('tasks');
@@ -680,7 +680,7 @@ const Index = () => {
                </button>
             </div>
             <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
-            <DataActions tasks={allTasks} onImport={setTasks} />
+            <DataActions tasks={allTasks} groups={allGroups} onImport={(t, g) => { setTasks(t); setGroups(g); }} />
           </div>
         </div>
 

@@ -202,7 +202,7 @@ export function useTasks() {
 
   return {
     tasks: dayTasks, allTasks, groups: dayGroups, allGroups: groups,
-    addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks,
+    addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups,
     incrementPomodoro, addOvertime, setTotalWork, editTask,
     addGroup, editGroup, deleteGroup, resetDailyTasks,
   };
