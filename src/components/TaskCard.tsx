@@ -163,6 +163,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
     <div
       draggable
       onDragStart={(e) => {
+        e.stopPropagation();
         e.dataTransfer.setData('text/plain', task.id);
         e.dataTransfer.effectAllowed = 'move';
         (e.currentTarget as HTMLElement).style.opacity = '0.4';
