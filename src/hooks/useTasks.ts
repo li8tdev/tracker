@@ -195,7 +195,8 @@ export function useTasks() {
     }));
   }, [groups]);
 
-  const dayTasks = tasks.filter(t => t.date === selectedDate || (t.isDaily && !t.groupId));
+  const dailyGroupIds = new Set(groups.filter(g => g.isDaily).map(g => g.id));
+  const dayTasks = tasks.filter(t => t.date === selectedDate || t.isDaily || (t.groupId && dailyGroupIds.has(t.groupId)));
   const dayGroups = groups.filter(g => g.date === selectedDate || g.isDaily);
   const allTasks = tasks;
 
