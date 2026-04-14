@@ -648,99 +648,94 @@ const Index = () => {
               <StatsCard label="Trabajo total" value={`${Math.floor(totalWorkSeconds / 3600)}h${Math.floor((totalWorkSeconds % 3600) / 60).toString().padStart(2, '0')}m`} icon={Timer} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 space-y-4">
-                <div className="bg-card border border-border rounded-2xl p-5">
-                  <TaskInput onAdd={addTask} onAddGroup={addGroup} defaultDate={selectedDate} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <TaskInput onAdd={addTask} onAddGroup={addGroup} defaultDate={selectedDate} />
+              </div>
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <Analytics allTasks={allTasks} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <div className="flex items-center gap-2 mb-3 shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+                  <h3 className="font-heading font-semibold text-sm">Pendientes</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">{todo.length}</span>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-3 shrink-0">
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground" />
-                      <h3 className="font-heading font-semibold text-sm">Pendientes</h3>
-                      <span className="text-xs text-muted-foreground ml-auto">{todo.length}</span>
-                    </div>
-                    <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {groups.map(g => {
-                        const gt = getGroupTasks(g.id);
-                        if (gt.length === 0 && !g.completedAt) return (
-                          <TaskGroupCard key={g.id} group={g} tasks={[]} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
-                        );
-                        const hasTodo = gt.some(t => t.status === 'todo');
-                        if (!hasTodo && gt.length > 0) return null;
-                        return (
-                          <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
-                        );
-                      })}
-                      {todo.length === 0 && groups.filter(g => getGroupTasks(g.id).length === 0 && !g.completedAt).length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'todo')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
-                      {todo.map(t => (
-                       <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-3 shrink-0">
-                      <div className="w-2 h-2 rounded-full bg-accent" />
-                      <h3 className="font-heading font-semibold text-sm">En Progreso</h3>
-                      <span className="text-xs text-muted-foreground ml-auto">{inProgress.length}</span>
-                    </div>
-                    <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {groups.map(g => {
-                        const gt = getGroupTasks(g.id);
-                        const hasInProgress = gt.some(t => t.status === 'in_progress');
-                        if (!hasInProgress) return null;
-                        return (
-                          <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
-                        );
-                      })}
-                      {inProgress.length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'in_progress')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada en progreso</p>}
-                      {inProgress.map(t => (
-                        <TaskCard
-                          key={t.id}
-                          task={t}
-                          onStatusChange={handleStatusChange}
-                          onDelete={deleteTask}
-                          onEdit={editTask}
-                          pomodoroState={getPomodoroState(t.id)}
-                          onPomodoroStart={handlePomodoroStart}
-                          onPomodoroStop={handlePomodoroStop}
-                          onPomodoroReset={handlePomodoroReset}
-                          onStartBreak={handleStartBreak}
-                          onContinueNext={handleContinueNext}
-                          onFinishTask={handleFinishTask}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
-                    <div className="flex items-center gap-2 mb-3 shrink-0">
-                      <div className="w-2 h-2 rounded-full bg-success" />
-                      <h3 className="font-heading font-semibold text-sm">Completadas</h3>
-                      <span className="text-xs text-muted-foreground ml-auto">{done.length}</span>
-                    </div>
-                    <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
-                      {groups.map(g => {
-                        const gt = getGroupTasks(g.id);
-                        if (!g.completedAt || gt.length === 0) return null;
-                        return (
-                          <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
-                        );
-                      })}
-                      {done.length === 0 && groups.filter(g => g.completedAt && getGroupTasks(g.id).length > 0).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
-                      {done.map(t => (
-                        <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
-                      ))}
-                    </div>
-                  </div>
+                <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
+                  {groups.map(g => {
+                    const gt = getGroupTasks(g.id);
+                    if (gt.length === 0 && !g.completedAt) return (
+                      <TaskGroupCard key={g.id} group={g} tasks={[]} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                    );
+                    const hasTodo = gt.some(t => t.status === 'todo');
+                    if (!hasTodo && gt.length > 0) return null;
+                    return (
+                      <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                    );
+                  })}
+                  {todo.length === 0 && groups.filter(g => getGroupTasks(g.id).length === 0 && !g.completedAt).length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'todo')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
+                  {todo.map(t => (
+                   <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-card border border-border rounded-2xl p-5">
-                  <Analytics allTasks={allTasks} />
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <div className="flex items-center gap-2 mb-3 shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-accent" />
+                  <h3 className="font-heading font-semibold text-sm">En Progreso</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">{inProgress.length}</span>
+                </div>
+                <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
+                  {groups.map(g => {
+                    const gt = getGroupTasks(g.id);
+                    const hasInProgress = gt.some(t => t.status === 'in_progress');
+                    if (!hasInProgress) return null;
+                    return (
+                      <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                    );
+                  })}
+                  {inProgress.length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'in_progress')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada en progreso</p>}
+                  {inProgress.map(t => (
+                    <TaskCard
+                      key={t.id}
+                      task={t}
+                      onStatusChange={handleStatusChange}
+                      onDelete={deleteTask}
+                      onEdit={editTask}
+                      pomodoroState={getPomodoroState(t.id)}
+                      onPomodoroStart={handlePomodoroStart}
+                      onPomodoroStop={handlePomodoroStop}
+                      onPomodoroReset={handlePomodoroReset}
+                      onStartBreak={handleStartBreak}
+                      onContinueNext={handleContinueNext}
+                      onFinishTask={handleFinishTask}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+                <div className="flex items-center gap-2 mb-3 shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-success" />
+                  <h3 className="font-heading font-semibold text-sm">Completadas</h3>
+                  <span className="text-xs text-muted-foreground ml-auto">{done.length}</span>
+                </div>
+                <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
+                  {groups.map(g => {
+                    const gt = getGroupTasks(g.id);
+                    if (!g.completedAt || gt.length === 0) return null;
+                    return (
+                      <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} />
+                    );
+                  })}
+                  {done.length === 0 && groups.filter(g => g.completedAt && getGroupTasks(g.id).length > 0).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
+                  {done.map(t => (
+                    <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
+                  ))}
                 </div>
               </div>
             </div>
