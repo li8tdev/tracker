@@ -466,9 +466,15 @@ const Index = () => {
       }
       workSeconds += overtimeCounters[taskId] ?? 0;
 
-      // If no timer was used at all, default to planned pomodoro time
+      // If no timer was used, calculate from group's earliest startedAt
       if (workSeconds === 0) {
-        workSeconds = pomCount * POMODORO_DURATION;
+        const earliestStart = groupTasks
+          .filter(t => t.startedAt)
+          .map(t => new Date(t.startedAt!).getTime())
+          .sort((a, b) => a - b)[0];
+        if (earliestStart) {
+          workSeconds = Math.floor((Date.now() - earliestStart) / 1000);
+        }
       }
 
       // Distribute work time across subtasks
