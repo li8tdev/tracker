@@ -15,6 +15,7 @@ export interface Task {
   totalWorkSeconds: number; // actual focused work time (no breaks)
   groupId?: string; // belongs to a task group
   isDaily?: boolean; // repeats every day
+  customTimeMinutes?: number; // custom timer in minutes (no breaks)
 }
 
 export interface TaskGroup {
@@ -26,6 +27,7 @@ export interface TaskGroup {
   isDaily?: boolean; // all tasks in group repeat daily
   scheduledTime?: string; // HH:mm - when daily group starts
   pomodoroCount?: number; // total pomodoros for the daily group
+  customTimeMinutes?: number; // custom timer in minutes (no breaks)
 }
 
 const STORAGE_KEY = 'productivity-tracker-tasks';
