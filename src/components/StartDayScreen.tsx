@@ -16,7 +16,7 @@ export function StartDayScreen({ onStart }: Props) {
   const msg = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
   const Icon = msg.icon;
 
-  const hour = new Date().getHours();
+  const hour = getNowUTC5().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
 
   return (
