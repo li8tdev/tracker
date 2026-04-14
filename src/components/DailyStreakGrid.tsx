@@ -131,9 +131,9 @@ export function DailyStreakGrid({ allTasks, allGroups }: Props) {
         <span className="text-xs text-muted-foreground ml-auto">Últimas 12 semanas</span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
         {dailyItems.map(item => (
-          <div key={item.id} className="space-y-2">
+          <div key={item.id} className="space-y-2 min-w-[220px] flex-shrink-0">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium truncate max-w-[200px]">{item.name}</span>
               <div className="flex items-center gap-1.5">
