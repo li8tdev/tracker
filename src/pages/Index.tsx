@@ -540,17 +540,6 @@ const Index = () => {
     }
     updateStatus(id, status as any);
   }, [updateStatus, stopOvertime, remove, allTasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork]);
-
-  if (!session.active) {
-    return <StartDayScreen onStart={handleStartDay} />;
-  }
-
-  const handleAddSubtask = (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => {
-    addTask(title, pomodoroCount, date ?? selectedDate, scheduledTime, groupId, isDaily);
-  };
-
-  const getGroupTasks = (groupId: string) => allTasks.filter(t => t.groupId === groupId);
-
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
 
   const handleDrop = useCallback((e: React.DragEvent, targetStatus: TaskStatus) => {
@@ -572,6 +561,16 @@ const Index = () => {
   const handleDragLeave = useCallback(() => {
     setDragOverColumn(null);
   }, []);
+
+  if (!session.active) {
+    return <StartDayScreen onStart={handleStartDay} />;
+  }
+
+  const handleAddSubtask = (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => {
+    addTask(title, pomodoroCount, date ?? selectedDate, scheduledTime, groupId, isDaily);
+  };
+
+  const getGroupTasks = (groupId: string) => allTasks.filter(t => t.groupId === groupId);
 
   const ungroupedTasks = tasks.filter(t => !t.groupId);
   const todo = ungroupedTasks.filter(t => t.status === 'todo');
