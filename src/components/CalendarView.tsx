@@ -28,8 +28,9 @@ const statusBg: Record<string, string> = {
   done: 'bg-success/10 border-success/20',
 };
 
-// Duration = pomodoros * 60min + (pomodoros - 1) * 10min breaks
-function calcDurationMin(pomodoros: number): number {
+// Duration = custom time OR pomodoros * 60min + (pomodoros - 1) * 10min breaks
+function calcDurationMin(pomodoros: number, customTimeMinutes?: number): number {
+  if (customTimeMinutes) return customTimeMinutes;
   if (pomodoros <= 0) return 0;
   return pomodoros * 60 + (pomodoros > 1 ? (pomodoros - 1) * 10 : 0);
 }
@@ -94,7 +95,7 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
       const anyInProgress = groupTasks.some(t => t.status === 'in_progress');
       const completedPomos = groupTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
       const overtime = groupTasks.reduce((s, t) => s + t.overtimeSeconds, 0);
-      const dur = calcDurationMin(g.pomodoroCount!);
+      const dur = calcDurationMin(g.pomodoroCount!, g.customTimeMinutes);
 
       result.push({
         id: g.id,
@@ -119,7 +120,7 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
       const anyInProgress = groupTasks.some(t => t.status === 'in_progress');
       const completedPomos = groupTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
       const overtime = groupTasks.reduce((s, t) => s + t.overtimeSeconds, 0);
-      const dur = calcDurationMin(g.pomodoroCount!);
+      const dur = calcDurationMin(g.pomodoroCount!, g.customTimeMinutes);
 
       result.push({
         id: g.id,
@@ -149,7 +150,7 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
       // Skip tasks that belong to a group shown as a block
       if (t.groupId && groupsWithSchedule.has(t.groupId)) return;
 
-      const dur = calcDurationMin(t.pomodoroCount);
+      const dur = calcDurationMin(t.pomodoroCount, t.customTimeMinutes);
       result.push({
         id: t.id,
         title: t.title,
