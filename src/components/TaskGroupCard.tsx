@@ -161,7 +161,7 @@ function DailyGroupPomodoroControls({
 
 export function TaskGroupCard({
   group, tasks, onEditGroup, onDeleteGroup, onDuplicateGroup, onAddSubtask,
-  onStatusChange, onDelete, onEdit,
+  onStatusChange, onDelete, onDuplicate, onEdit,
   getPomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset,
   onStartBreak, onContinueNext, onFinishTask,
 }: Props) {
