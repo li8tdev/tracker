@@ -18,14 +18,14 @@ interface PomodoroState {
 interface Props {
   group: TaskGroup;
   tasks: Task[];
-  onEditGroup: (id: string, updates: { name?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number }) => void;
+  onEditGroup: (id: string, updates: { name?: string; date?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number; customTimeMinutes?: number }) => void;
   onDeleteGroup: (id: string) => void;
   onDuplicateGroup?: (id: string) => void;
   onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
-  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean }) => void;
+  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean; customTimeMinutes?: number }) => void;
   getPomodoroState?: (taskId: string) => PomodoroState | undefined;
   onPomodoroStart?: (id: string) => void;
   onPomodoroStop?: (id: string) => void;
@@ -171,6 +171,10 @@ export function TaskGroupCard({
   const [editDaily, setEditDaily] = useState(!!group.isDaily);
   const [editTime, setEditTime] = useState(group.scheduledTime || '');
   const [editPomodoros, setEditPomodoros] = useState(group.pomodoroCount || 1);
+  const [editTimerMode, setEditTimerMode] = useState<'pomodoro' | 'custom'>(group.customTimeMinutes ? 'custom' : 'pomodoro');
+  const [editCustomMinutes, setEditCustomMinutes] = useState(group.customTimeMinutes ?? 30);
+  const [editDate, setEditDate] = useState<Date>(new Date(group.date + 'T12:00:00'));
+  const [editCalOpen, setEditCalOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newPomodoros, setNewPomodoros] = useState(1);
@@ -198,6 +202,9 @@ export function TaskGroupCard({
     setEditDaily(!!group.isDaily);
     setEditTime(group.scheduledTime || '');
     setEditPomodoros(group.pomodoroCount || 1);
+    setEditTimerMode(group.customTimeMinutes ? 'custom' : 'pomodoro');
+    setEditCustomMinutes(group.customTimeMinutes ?? 30);
+    setEditDate(new Date(group.date + 'T12:00:00'));
     setEditing(true);
     setShowActions(false);
   };
@@ -205,9 +212,11 @@ export function TaskGroupCard({
   const saveEdit = () => {
     onEditGroup(group.id, {
       name: editName.trim() || group.name,
+      date: editDate.toISOString().split('T')[0],
       isDaily: editDaily || undefined,
       scheduledTime: editDaily && editTime ? editTime : undefined,
-      pomodoroCount: editDaily ? editPomodoros : undefined,
+      pomodoroCount: editDaily ? (editTimerMode === 'pomodoro' ? editPomodoros : 1) : undefined,
+      customTimeMinutes: editDaily && editTimerMode === 'custom' ? editCustomMinutes : undefined,
     });
     setEditing(false);
   };
@@ -305,6 +314,19 @@ export function TaskGroupCard({
                 >
                   <Repeat size={9} /> Diario
                 </button>
+                {!editDaily && (
+                  <Popover open={editCalOpen} onOpenChange={setEditCalOpen}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-secondary">
+                        <CalendarDays size={10} />
+                        {format(editDate, "d MMM", { locale: es })}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={editDate} onSelect={d => { if (d) { setEditDate(d); setEditCalOpen(false); } }} className="p-3 pointer-events-auto" />
+                    </PopoverContent>
+                  </Popover>
+                )}
                 {editDaily && (
                   <>
                     <div className="flex items-center gap-1">
@@ -316,11 +338,30 @@ export function TaskGroupCard({
                         className="bg-transparent border border-border rounded px-1 py-0.5 text-[10px] text-foreground focus:outline-none w-[4.5rem]"
                       />
                     </div>
-                    <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                      🍅
-                      <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
-                      <span className="w-3 text-center font-mono">{editPomodoros}</span>
-                      <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                    <div className="flex items-center gap-0.5">
+                      <div className="flex bg-secondary rounded-md p-0.5">
+                        <button type="button" onClick={() => setEditTimerMode('pomodoro')} className={`px-1 py-0.5 rounded text-[9px] font-medium transition-colors ${editTimerMode === 'pomodoro' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>🍅</button>
+                        <button type="button" onClick={() => setEditTimerMode('custom')} className={`px-1 py-0.5 rounded text-[9px] font-medium transition-colors ${editTimerMode === 'custom' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>⏱</button>
+                      </div>
+                      {editTimerMode === 'pomodoro' ? (
+                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <button type="button" onClick={() => setEditPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
+                          <span className="w-3 text-center font-mono">{editPomodoros}</span>
+                          <button type="button" onClick={() => setEditPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-0.5">
+                          <input
+                            type="number"
+                            min={1}
+                            max={480}
+                            value={editCustomMinutes}
+                            onChange={e => setEditCustomMinutes(Math.max(1, Math.min(480, parseInt(e.target.value) || 1)))}
+                            className="w-12 bg-background border border-border rounded px-1 py-0.5 text-[10px] font-mono text-center focus:outline-none"
+                          />
+                          <span className="text-[10px] text-muted-foreground">min</span>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -372,9 +413,14 @@ export function TaskGroupCard({
                     {group.scheduledTime}
                   </span>
                 )}
-                {isDaily && group.pomodoroCount && (
+                {isDaily && group.pomodoroCount && !group.customTimeMinutes && (
                   <span className="text-[10px] text-muted-foreground font-mono">
                     🍅 {group.pomodoroCount}
+                  </span>
+                )}
+                {isDaily && group.customTimeMinutes && (
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    ⏱ {group.customTimeMinutes}min
                   </span>
                 )}
                 <span className="text-[10px] text-muted-foreground font-mono">

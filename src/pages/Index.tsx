@@ -160,7 +160,9 @@ const Index = () => {
       const group = !task ? allGroups.find(g => g.id === taskId) : undefined;
       if (!task && !group) return;
 
-      const pomCount = task?.pomodoroCount ?? group?.pomodoroCount ?? 1;
+      const customMinutes = task?.customTimeMinutes ?? group?.customTimeMinutes;
+      const isCustomTimer = !!customMinutes;
+      const pomCount = isCustomTimer ? 1 : (task?.pomodoroCount ?? group?.pomodoroCount ?? 1);
       let newCompleted: number;
 
       if (task) {
@@ -172,9 +174,10 @@ const Index = () => {
       clearTimerState(id);
 
       const title = task?.title ?? group?.name ?? '';
-      if (newCompleted >= pomCount) {
-        sendNotification('🎉 ¡Todos los pomodoros completados!', `Tarea: ${title}. ¡Puedes marcarla como completada!`);
-        toast.success('🎉 ¡Todos los pomodoros completados!', { description: title });
+      // Custom timer: always go straight to all_done (no breaks)
+      if (isCustomTimer || newCompleted >= pomCount) {
+        sendNotification('🎉 ¡Tiempo completado!', `Tarea: ${title}. ¡Puedes marcarla como completada!`);
+        toast.success('🎉 ¡Tiempo completado!', { description: title });
         setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'all_done', currentPomodoro: newCompleted } }));
         startOvertime(taskId);
       } else {
@@ -406,9 +409,11 @@ const Index = () => {
     const task = allTasks.find(candidate => candidate.id === taskId);
     const group = !task ? allGroups.find(g => g.id === taskId) : undefined;
     const currentPomodoro = meta?.currentPomodoro ?? Math.max(1, (task?.pomodorosCompleted ?? 0) + 1);
+    const customMinutes = task?.customTimeMinutes ?? group?.customTimeMinutes;
+    const timerDuration = customMinutes ? customMinutes * 60 : POMODORO_DURATION;
     const duration = meta?.phase === 'paused'
-      ? Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION)
-      : POMODORO_DURATION;
+      ? Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? timerDuration)
+      : timerDuration;
 
     start(`pomo-${taskId}`, duration, 'pomodoro');
     upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration, startedAt: Date.now(), running: true });
@@ -458,17 +463,20 @@ const Index = () => {
       // Finish daily group - mark all subtasks as done
       const groupTasks = allTasks.filter(t => t.groupId === group.id);
       const meta = pomodoroMeta[taskId];
-      const pomCount = group.pomodoroCount ?? 1;
+      const customMinutes = group.customTimeMinutes;
+      const isCustomTimer = !!customMinutes;
+      const pomCount = isCustomTimer ? 1 : (group.pomodoroCount ?? 1);
+      const timerDuration = isCustomTimer ? customMinutes * 60 : POMODORO_DURATION;
       
       // Calculate completed pomodoros correctly based on phase
       const currentPom = meta?.currentPomodoro ?? 0;
       const isPartial = meta && (meta.phase === 'working' || meta.phase === 'paused');
       const completedPomodoros = isPartial ? Math.max(0, currentPom - 1) : currentPom;
       
-      let workSeconds = completedPomodoros * POMODORO_DURATION;
+      let workSeconds = completedPomodoros * timerDuration;
       const timerVal = getRemainingForTimer(`pomo-${taskId}`);
       if (isPartial && timerVal !== undefined) {
-        workSeconds += POMODORO_DURATION - timerVal;
+        workSeconds += timerDuration - timerVal;
       }
       workSeconds += overtimeCounters[taskId] ?? 0;
 
@@ -503,10 +511,12 @@ const Index = () => {
     if (!task) return;
     const meta = pomodoroMeta[taskId];
     const timerVal = getRemainingForTimer(`pomo-${taskId}`);
+    const customMinutes = task.customTimeMinutes;
+    const timerDuration = customMinutes ? customMinutes * 60 : POMODORO_DURATION;
 
-    let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
+    let workSeconds = task.pomodorosCompleted * timerDuration;
     if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
-      workSeconds += POMODORO_DURATION - timerVal;
+      workSeconds += timerDuration - timerVal;
     }
     const ot = overtimeCounters[taskId] ?? 0;
     workSeconds += ot;
@@ -530,10 +540,11 @@ const Index = () => {
       const task = allTasks.find(t => t.id === id);
       if (task) {
         const meta = pomodoroMeta[id];
-        let workSeconds = task.pomodorosCompleted * POMODORO_DURATION;
+        const timerDuration = task.customTimeMinutes ? task.customTimeMinutes * 60 : POMODORO_DURATION;
+        let workSeconds = task.pomodorosCompleted * timerDuration;
         const timerVal = getRemainingForTimer(`pomo-${id}`);
         if (meta && (meta.phase === 'working' || meta.phase === 'paused') && timerVal !== undefined) {
-          workSeconds += POMODORO_DURATION - timerVal;
+          workSeconds += timerDuration - timerVal;
         }
         workSeconds += overtimeCounters[id] ?? 0;
         // If no timer was used, calculate from actual startedAt time
