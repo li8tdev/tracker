@@ -172,7 +172,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
                 Diario
               </span>
             )}
-            {task.date !== new Date().toISOString().split('T')[0] && (
+            {task.date !== getToday() && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                 <CalendarDays size={9} />
                 {format(new Date(task.date + 'T12:00:00'), "d MMM", { locale: es })}

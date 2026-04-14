@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-
+import { getToday } from '@/lib/storage';
 const SESSION_KEY = 'tracker-day-session'; // day session storage key
 
 interface SessionState {
@@ -16,7 +16,7 @@ export function useDaySession() {
         // Auto-expire if started on a different day
         if (parsed.startedAt) {
           const startDay = new Date(parsed.startedAt).toISOString().split('T')[0];
-          const today = new Date().toISOString().split('T')[0];
+          const today = getToday();
           if (startDay !== today) return { active: false, startedAt: null };
         }
         return parsed;
