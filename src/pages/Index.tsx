@@ -160,7 +160,9 @@ const Index = () => {
       const group = !task ? allGroups.find(g => g.id === taskId) : undefined;
       if (!task && !group) return;
 
-      const pomCount = task?.pomodoroCount ?? group?.pomodoroCount ?? 1;
+      const customMinutes = task?.customTimeMinutes ?? group?.customTimeMinutes;
+      const isCustomTimer = !!customMinutes;
+      const pomCount = isCustomTimer ? 1 : (task?.pomodoroCount ?? group?.pomodoroCount ?? 1);
       let newCompleted: number;
 
       if (task) {
@@ -172,9 +174,10 @@ const Index = () => {
       clearTimerState(id);
 
       const title = task?.title ?? group?.name ?? '';
-      if (newCompleted >= pomCount) {
-        sendNotification('🎉 ¡Todos los pomodoros completados!', `Tarea: ${title}. ¡Puedes marcarla como completada!`);
-        toast.success('🎉 ¡Todos los pomodoros completados!', { description: title });
+      // Custom timer: always go straight to all_done (no breaks)
+      if (isCustomTimer || newCompleted >= pomCount) {
+        sendNotification('🎉 ¡Tiempo completado!', `Tarea: ${title}. ¡Puedes marcarla como completada!`);
+        toast.success('🎉 ¡Tiempo completado!', { description: title });
         setPomodoroMeta(prev => ({ ...prev, [taskId]: { ...prev[taskId], phase: 'all_done', currentPomodoro: newCompleted } }));
         startOvertime(taskId);
       } else {
@@ -406,9 +409,11 @@ const Index = () => {
     const task = allTasks.find(candidate => candidate.id === taskId);
     const group = !task ? allGroups.find(g => g.id === taskId) : undefined;
     const currentPomodoro = meta?.currentPomodoro ?? Math.max(1, (task?.pomodorosCompleted ?? 0) + 1);
+    const customMinutes = task?.customTimeMinutes ?? group?.customTimeMinutes;
+    const timerDuration = customMinutes ? customMinutes * 60 : POMODORO_DURATION;
     const duration = meta?.phase === 'paused'
-      ? Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? POMODORO_DURATION)
-      : POMODORO_DURATION;
+      ? Math.max(1, getRemainingForTimer(`pomo-${taskId}`) ?? timerDuration)
+      : timerDuration;
 
     start(`pomo-${taskId}`, duration, 'pomodoro');
     upsertTimerState({ id: `pomo-${taskId}`, type: 'pomodoro', duration, startedAt: Date.now(), running: true });
