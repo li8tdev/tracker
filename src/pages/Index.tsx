@@ -663,7 +663,12 @@ const Index = () => {
         {activeTab === 'tasks' ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+              <div
+                onDrop={(e) => handleDrop(e, 'todo')}
+                onDragOver={(e) => handleDragOver(e, 'todo')}
+                onDragLeave={handleDragLeave}
+                className={`bg-card border rounded-2xl p-5 flex flex-col transition-colors ${dragOverColumn === 'todo' ? 'border-accent bg-accent/5' : 'border-border'}`}
+              >
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-muted-foreground" />
                   <h3 className="font-heading font-semibold text-sm">Pendientes</h3>
