@@ -165,7 +165,7 @@ export function TaskGroupCard({
   getPomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset,
   onStartBreak, onContinueNext, onFinishTask,
 }: Props) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(group.name);
   const [editDaily, setEditDaily] = useState(!!group.isDaily);
