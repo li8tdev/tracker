@@ -550,6 +550,28 @@ const Index = () => {
 
   const getGroupTasks = (groupId: string) => allTasks.filter(t => t.groupId === groupId);
 
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetStatus: TaskStatus) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task || task.status === targetStatus) return;
+    handleStatusChange(taskId, targetStatus);
+  }, [allTasks, handleStatusChange]);
+
+  const handleDragOver = useCallback((e: React.DragEvent, status: TaskStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverColumn(null);
+  }, []);
+
   const ungroupedTasks = tasks.filter(t => !t.groupId);
   const todo = ungroupedTasks.filter(t => t.status === 'todo');
   const inProgress = ungroupedTasks.filter(t => t.status === 'in_progress');
