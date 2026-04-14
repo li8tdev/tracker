@@ -30,7 +30,7 @@ export function Analytics({ allTasks = [] }: Props) {
     // Streak calculation
     let streak = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date();
+      const d = getNowUTC5();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
       const dayCompleted = safeTasks.filter(t => t.date === dateStr && t.status === 'done').length;
