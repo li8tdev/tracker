@@ -95,9 +95,7 @@ export function importData(file: File): Promise<Task[]> {
 }
 
 export function getNowUTC5(): Date {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  return new Date(utc - 5 * 3600000);
+  return new Date(Date.now() - 5 * 3600000);
 }
 
 export function getToday(): string {
