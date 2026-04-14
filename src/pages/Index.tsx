@@ -693,7 +693,12 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+              <div
+                onDrop={(e) => handleDrop(e, 'in_progress')}
+                onDragOver={(e) => handleDragOver(e, 'in_progress')}
+                onDragLeave={handleDragLeave}
+                className={`bg-card border rounded-2xl p-5 flex flex-col transition-colors ${dragOverColumn === 'in_progress' ? 'border-accent bg-accent/5' : 'border-border'}`}
+              >
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-accent" />
                   <h3 className="font-heading font-semibold text-sm">En Progreso</h3>
@@ -728,7 +733,12 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+              <div
+                onDrop={(e) => handleDrop(e, 'done')}
+                onDragOver={(e) => handleDragOver(e, 'done')}
+                onDragLeave={handleDragLeave}
+                className={`bg-card border rounded-2xl p-5 flex flex-col transition-colors ${dragOverColumn === 'done' ? 'border-success bg-success/5' : 'border-border'}`}
+              >
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-success" />
                   <h3 className="font-heading font-semibold text-sm">Completadas</h3>
