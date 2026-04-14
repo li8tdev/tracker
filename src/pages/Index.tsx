@@ -658,6 +658,8 @@ const Index = () => {
               </div>
             </div>
 
+            <DailyStreakGrid allTasks={allTasks} allGroups={allGroups} />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
                 <div className="flex items-center gap-2 mb-3 shrink-0">
