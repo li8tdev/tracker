@@ -247,7 +247,18 @@ export function TaskGroupCard({
       : 'border-accent/20 bg-accent/5';
 
   return (
-    <div className={`rounded-lg border transition-all overflow-hidden ${borderClass}`}>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', `group:${group.id}`);
+        e.dataTransfer.effectAllowed = 'move';
+        (e.currentTarget as HTMLElement).style.opacity = '0.5';
+      }}
+      onDragEnd={(e) => {
+        (e.currentTarget as HTMLElement).style.opacity = '1';
+      }}
+      className={`rounded-lg border transition-all overflow-hidden cursor-grab active:cursor-grabbing ${borderClass}`}
+    >
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-start gap-1.5 p-2.5">
           <CollapsibleTrigger asChild>
