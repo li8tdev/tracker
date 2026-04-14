@@ -50,7 +50,7 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 items-end">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex-1 space-y-2">
         <div className="flex gap-1.5">
           <div className="flex bg-secondary rounded-lg p-0.5">
@@ -178,10 +178,10 @@ export function TaskInput({ onAdd, onAddGroup, defaultDate }: Props) {
       </div>
       <button
         type="submit"
-        className="bg-foreground text-background rounded-lg px-4 py-3 hover:opacity-80 transition-opacity flex items-center gap-1 text-sm font-medium font-heading"
+        className="w-full bg-foreground text-background rounded-lg px-4 py-2.5 hover:opacity-80 transition-opacity flex items-center justify-center gap-1.5 text-sm font-medium font-heading"
       >
         <Plus size={16} />
-        {mode === 'group' ? 'Crear grupo' : 'Añadir'}
+        {mode === 'group' ? 'Crear grupo' : 'Añadir tarea'}
       </button>
     </form>
   );
