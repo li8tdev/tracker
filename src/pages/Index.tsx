@@ -23,6 +23,7 @@ import { DataActions } from '@/components/DataActions';
 import { StartDayScreen } from '@/components/StartDayScreen';
 import { WorkanaBar } from '@/components/WorkanaBar';
 import { SystemRAM } from '@/components/SystemRAM';
+import { DailyStreakGrid } from '@/components/DailyStreakGrid';
 import { ListTodo, CheckCircle2, Flame, Target, Zap, CalendarDays, LayoutGrid, Timer, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -656,6 +657,8 @@ const Index = () => {
                 <Analytics allTasks={allTasks} />
               </div>
             </div>
+
+            <DailyStreakGrid allTasks={allTasks} allGroups={allGroups} />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
