@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
+import { TaskStatus } from '@/lib/storage';
 import { useTimer } from '@/hooks/useTimer';
 import { useDaySession } from '@/hooks/useDaySession';
 import { requestNotificationPermission, sendNotification } from '@/lib/notifications';
@@ -539,6 +540,27 @@ const Index = () => {
     }
     updateStatus(id, status as any);
   }, [updateStatus, stopOvertime, remove, allTasks, pomodoroMeta, getRemainingForTimer, overtimeCounters, setTotalWork]);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetStatus: TaskStatus) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task || task.status === targetStatus) return;
+    handleStatusChange(taskId, targetStatus);
+  }, [allTasks, handleStatusChange]);
+
+  const handleDragOver = useCallback((e: React.DragEvent, status: TaskStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverColumn(null);
+  }, []);
 
   if (!session.active) {
     return <StartDayScreen onStart={handleStartDay} />;
@@ -641,7 +663,12 @@ const Index = () => {
         {activeTab === 'tasks' ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+              <div
+                onDrop={(e) => handleDrop(e, 'todo')}
+                onDragOver={(e) => handleDragOver(e, 'todo')}
+                onDragLeave={handleDragLeave}
+                className={`bg-card border rounded-2xl p-5 flex flex-col transition-colors ${dragOverColumn === 'todo' ? 'border-accent bg-accent/5' : 'border-border'}`}
+              >
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-muted-foreground" />
                   <h3 className="font-heading font-semibold text-sm">Pendientes</h3>
@@ -666,7 +693,12 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+              <div
+                onDrop={(e) => handleDrop(e, 'in_progress')}
+                onDragOver={(e) => handleDragOver(e, 'in_progress')}
+                onDragLeave={handleDragLeave}
+                className={`bg-card border rounded-2xl p-5 flex flex-col transition-colors ${dragOverColumn === 'in_progress' ? 'border-accent bg-accent/5' : 'border-border'}`}
+              >
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-accent" />
                   <h3 className="font-heading font-semibold text-sm">En Progreso</h3>
@@ -701,7 +733,12 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-2xl p-5 flex flex-col">
+              <div
+                onDrop={(e) => handleDrop(e, 'done')}
+                onDragOver={(e) => handleDragOver(e, 'done')}
+                onDragLeave={handleDragLeave}
+                className={`bg-card border rounded-2xl p-5 flex flex-col transition-colors ${dragOverColumn === 'done' ? 'border-success bg-success/5' : 'border-border'}`}
+              >
                 <div className="flex items-center gap-2 mb-3 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-success" />
                   <h3 className="font-heading font-semibold text-sm">Completadas</h3>

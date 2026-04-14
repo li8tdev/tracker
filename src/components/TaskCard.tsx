@@ -136,7 +136,18 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
   }
 
   return (
-    <div className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 ${task.status === 'done' ? 'opacity-50' : ''}`}>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', task.id);
+        e.dataTransfer.effectAllowed = 'move';
+        (e.currentTarget as HTMLElement).style.opacity = '0.4';
+      }}
+      onDragEnd={(e) => {
+        (e.currentTarget as HTMLElement).style.opacity = '';
+      }}
+      className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 cursor-grab active:cursor-grabbing ${task.status === 'done' ? 'opacity-50' : ''}`}
+    >
       {/* Main row */}
       <div className="flex items-start gap-2">
         <button
