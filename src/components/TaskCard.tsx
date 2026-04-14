@@ -254,11 +254,11 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
               <div className="flex items-center gap-1 bg-accent/5 border border-accent/15 rounded-md px-2 py-1">
                 <Timer size={11} className="text-accent" />
                 <span className="font-mono text-[11px] font-semibold text-accent tabular-nums">
-                  {pomodoroState ? formatTime(pomodoroState.remainingSeconds) : '60:00'}
+                  {pomodoroState ? formatTime(pomodoroState.remainingSeconds) : formatTime(task.customTimeMinutes ? task.customTimeMinutes * 60 : 3600)}
                 </span>
               </div>
               <span className="text-[10px] text-muted-foreground">
-                {pomodoroState?.currentPomodoro ?? 1}/{task.pomodoroCount}
+                {task.customTimeMinutes ? `⏱ ${task.customTimeMinutes}min` : `${pomodoroState?.currentPomodoro ?? 1}/${task.pomodoroCount}`}
               </span>
               <div className="flex gap-0.5 ml-auto">
                 {phase === 'working' ? (
