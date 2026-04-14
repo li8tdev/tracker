@@ -86,20 +86,36 @@ export function importData(file: File): Promise<{ tasks: Task[]; groups: TaskGro
         const data = JSON.parse(e.target?.result as string);
         // New format: { tasks, groups }
         if (data && !Array.isArray(data) && Array.isArray(data.tasks)) {
-          resolve({ tasks: data.tasks, groups: data.groups ?? [] });
+          const tasks = migrateTasks(data.tasks);
+          const groups: TaskGroup[] = data.groups ?? [];
+          // For any groupId referenced by tasks but missing from groups, try existing localStorage
+          const existingGroups = loadGroups();
+          const groupIdsInData = new Set(groups.map((g: TaskGroup) => g.id));
+          const missingGroupIds = new Set<string>();
+          tasks.forEach((t: Task) => { if (t.groupId && !groupIdsInData.has(t.groupId)) missingGroupIds.add(t.groupId); });
+          missingGroupIds.forEach(id => {
+            const existing = existingGroups.find(g => g.id === id);
+            if (existing) {
+              groups.push(existing);
+            } else {
+              groups.push(inferGroupFromTasks(id, tasks));
+            }
+          });
+          resolve({ tasks, groups });
         }
         // Legacy format: plain array of tasks
         else if (Array.isArray(data)) {
-          // Auto-detect groups from groupId references
+          const tasks = migrateTasks(data);
+          const existingGroups = loadGroups();
           const groupIds = new Set<string>();
-          data.forEach((t: any) => { if (t.groupId) groupIds.add(t.groupId); });
-          const inferredGroups: TaskGroup[] = Array.from(groupIds).map(id => ({
-            id,
-            name: `Grupo importado`,
-            date: data.find((t: any) => t.groupId === id)?.date ?? getToday(),
-            createdAt: new Date().toISOString(),
-          }));
-          resolve({ tasks: data, groups: inferredGroups });
+          tasks.forEach((t: Task) => { if (t.groupId) groupIds.add(t.groupId); });
+          const inferredGroups: TaskGroup[] = Array.from(groupIds).map(id => {
+            // Prefer existing group from localStorage (preserves name, isDaily, etc.)
+            const existing = existingGroups.find(g => g.id === id);
+            if (existing) return existing;
+            return inferGroupFromTasks(id, tasks);
+          });
+          resolve({ tasks, groups: inferredGroups });
         }
         else reject(new Error('Invalid format'));
       } catch {
@@ -108,6 +124,41 @@ export function importData(file: File): Promise<{ tasks: Task[]; groups: TaskGro
     };
     reader.readAsText(file);
   });
+}
+
+function migrateTasks(tasks: any[]): Task[] {
+  return tasks.map((t: any) => ({
+    ...t,
+    pomodoroCount: t.pomodoroCount ?? 1,
+    pomodorosCompleted: t.pomodorosCompleted ?? 0,
+    overtimeSeconds: t.overtimeSeconds ?? 0,
+    totalWorkSeconds: t.totalWorkSeconds ?? 0,
+    scheduledTime: t.scheduledTime ?? undefined,
+  }));
+}
+
+function inferGroupFromTasks(groupId: string, tasks: Task[]): TaskGroup {
+  const groupTasks = tasks.filter(t => t.groupId === groupId);
+  // Try to build a meaningful name from the first task's context
+  const firstTask = groupTasks[0];
+  const hasDaily = groupTasks.some(t => t.isDaily);
+  
+  // Build group name from common words or first task
+  let name = 'Grupo';
+  if (groupTasks.length > 0) {
+    // Use the shortest task title as a hint, or just "Grupo (N tareas)"
+    name = `Grupo (${groupTasks.length} tareas)`;
+  }
+
+  return {
+    id: groupId,
+    name,
+    date: firstTask?.date ?? getToday(),
+    createdAt: firstTask?.createdAt ?? new Date().toISOString(),
+    isDaily: hasDaily || undefined,
+    scheduledTime: firstTask?.scheduledTime ?? undefined,
+    pomodoroCount: hasDaily ? groupTasks.length : undefined,
+  };
 }
 
 export function getNowUTC5(): Date {
