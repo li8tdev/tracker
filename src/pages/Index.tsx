@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
+import { TaskStatus } from '@/lib/storage';
 import { useTimer } from '@/hooks/useTimer';
 import { useDaySession } from '@/hooks/useDaySession';
 import { requestNotificationPermission, sendNotification } from '@/lib/notifications';
