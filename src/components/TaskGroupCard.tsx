@@ -427,6 +427,7 @@ export function TaskGroupCard({
                     task={t}
                     onStatusChange={onStatusChange}
                     onDelete={onDelete}
+                    onDuplicate={onDuplicate}
                     onEdit={onEdit}
                     pomodoroState={pomState}
                     onPomodoroStart={onPomodoroStart}
