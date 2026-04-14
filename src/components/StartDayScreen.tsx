@@ -1,4 +1,5 @@
 import { Rocket, Zap, Target, Flame, Coffee } from 'lucide-react';
+import { getNowUTC5 } from '@/lib/storage';
 
 const motivationMessages = [
   { icon: Rocket, title: "¡Es hora de conquistar el día!", text: "Cada tarea completada te acerca a tu versión más productiva." },
@@ -16,7 +17,7 @@ export function StartDayScreen({ onStart }: Props) {
   const msg = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
   const Icon = msg.icon;
 
-  const hour = new Date().getHours();
+  const hour = getNowUTC5().getHours();
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
 
   return (

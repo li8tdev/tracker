@@ -387,7 +387,7 @@ const Index = () => {
     workanaInitialized.current = false;
     setPomodoroMeta(nextPomodoroMeta);
     // Reset daily tasks to pending for tomorrow
-    const tomorrow = new Date();
+    const tomorrow = getNowUTC5();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     resetDailyTasks(tomorrowStr);
