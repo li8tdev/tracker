@@ -680,7 +680,19 @@ const Index = () => {
                </button>
             </div>
             <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
-            <DataActions tasks={allTasks} groups={allGroups} onImport={(t, g) => { setTasks(t); setGroups(g); }} />
+            <DataActions tasks={allTasks} groups={allGroups} onImport={(importedTasks, importedGroups) => {
+              // Merge: replace existing by id, add new ones
+              setTasks(prev => {
+                const existingIds = new Set(importedTasks.map(t => t.id));
+                const kept = prev.filter(t => !existingIds.has(t.id));
+                return [...kept, ...importedTasks];
+              });
+              setGroups(prev => {
+                const existingIds = new Set(importedGroups.map(g => g.id));
+                const kept = prev.filter(g => !existingIds.has(g.id));
+                return [...kept, ...importedGroups];
+              });
+            }} />
           </div>
         </div>
 
