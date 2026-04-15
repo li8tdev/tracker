@@ -66,10 +66,13 @@ export function useTasks() {
     setTasks(prev => [...prev, task]);
   }, [selectedDate]);
 
-  // Auto-complete groups based on task status changes
+  // Auto-complete groups based on task status changes (scope to group's current date for daily groups)
   const updateGroupCompletionFromTasks = useCallback((currentTasks: Task[]) => {
     setGroups(prev => prev.map(g => {
-      const groupTasks = currentTasks.filter(t => t.groupId === g.id);
+      // For daily groups, only check tasks on the group's current date
+      const groupTasks = g.isDaily
+        ? currentTasks.filter(t => t.groupId === g.id && t.date === g.date)
+        : currentTasks.filter(t => t.groupId === g.id);
       if (groupTasks.length === 0) return { ...g, completedAt: undefined };
       const allDone = groupTasks.every(t => t.status === 'done');
       return { ...g, completedAt: allDone ? (g.completedAt ?? new Date().toISOString()) : undefined };
