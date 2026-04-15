@@ -87,10 +87,10 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
   const entries = useMemo(() => {
     const result: CalendarEntry[] = [];
 
-    // Daily groups appear on every date
+    // Daily groups appear on every date — only count tasks for the selected date
     const dailyGroups = allGroups.filter(g => g.isDaily && g.scheduledTime && g.pomodoroCount);
     dailyGroups.forEach(g => {
-      const groupTasks = allTasks.filter(t => t.groupId === g.id);
+      const groupTasks = allTasks.filter(t => t.groupId === g.id && t.date === selectedDateStr);
       const allDone = groupTasks.length > 0 && groupTasks.every(t => t.status === 'done');
       const anyInProgress = groupTasks.some(t => t.status === 'in_progress');
       const completedPomos = groupTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
@@ -113,9 +113,11 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
     });
 
     // Non-daily groups with scheduledTime on this date
-    const projectGroups = allGroups.filter(g => !g.isDaily && g.scheduledTime && g.pomodoroCount && g.date === selectedDateStr);
+    const projectGroups = allGroups.filter(g => !g.isDaily && g.scheduledTime && g.pomodoroCount);
     projectGroups.forEach(g => {
-      const groupTasks = allTasks.filter(t => t.groupId === g.id);
+      // Show if group date matches OR any task on this date belongs to it
+      const groupTasks = allTasks.filter(t => t.groupId === g.id && t.date === selectedDateStr);
+      if (groupTasks.length === 0 && g.date !== selectedDateStr) return;
       const allDone = groupTasks.length > 0 && groupTasks.every(t => t.status === 'done');
       const anyInProgress = groupTasks.some(t => t.status === 'in_progress');
       const completedPomos = groupTasks.reduce((s, t) => s + t.pomodorosCompleted, 0);
