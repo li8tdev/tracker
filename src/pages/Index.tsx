@@ -573,7 +573,11 @@ const Index = () => {
     // Group drag
     if (data.startsWith('group:')) {
       const groupId = data.replace('group:', '');
-      const groupTasks = allTasks.filter(t => t.groupId === groupId);
+      // Only move tasks for the current date view, not historical copies
+      const group = allGroups.find(g => g.id === groupId);
+      const groupTasks = group?.isDaily
+        ? tasks.filter(t => t.groupId === groupId && t.date === selectedDate)
+        : tasks.filter(t => t.groupId === groupId);
       groupTasks.forEach(t => {
         if (t.status !== targetStatus) {
           handleStatusChange(t.id, targetStatus);
@@ -605,7 +609,14 @@ const Index = () => {
     addTask(title, pomodoroCount, date ?? selectedDate, scheduledTime, groupId, isDaily);
   };
 
-  const getGroupTasks = (groupId: string) => allTasks.filter(t => t.groupId === groupId);
+  // For daily groups, only show tasks matching the selected date; for project groups show all
+  const getGroupTasks = (groupId: string) => {
+    const group = allGroups.find(g => g.id === groupId);
+    if (group?.isDaily) {
+      return tasks.filter(t => t.groupId === groupId && t.date === selectedDate);
+    }
+    return tasks.filter(t => t.groupId === groupId);
+  };
 
   const ungroupedTasks = tasks.filter(t => !t.groupId);
   const todo = ungroupedTasks.filter(t => t.status === 'todo');
