@@ -44,25 +44,19 @@ export function DailyStreakGrid({ allTasks, allGroups }: Props) {
       const groupTasks = allTasks.filter(t => t.groupId === group.id);
       const completedDates = new Set<string>();
 
-      // Check each date where group tasks were completed
+      // Group tasks by date
+      const tasksByDate = new Map<string, typeof groupTasks>();
       for (const task of groupTasks) {
-        if (task.completedAt) {
-          const date = new Date(new Date(task.completedAt).getTime() - 5 * 3600000).toISOString().split('T')[0];
-          completedDates.add(date);
-        }
+        const date = task.date;
+        if (!tasksByDate.has(date)) tasksByDate.set(date, []);
+        tasksByDate.get(date)!.push(task);
       }
 
-      // Only count dates where ALL group tasks were completed
-      const validDates = new Set<string>();
-      for (const date of completedDates) {
-        const allDone = groupTasks.every(t => {
-          if (!t.completedAt) return false;
-          const completedDate = new Date(new Date(t.completedAt).getTime() - 5 * 3600000).toISOString().split('T')[0];
-          return completedDate === date;
-        });
-        // For daily tasks that reset, check if at least completed once on that date
-        // Since daily tasks reset, we check completedAt dates from all tasks
-        if (allDone || groupTasks.length === 0) validDates.add(date);
+      // A date is completed if ALL tasks for that date are done
+      for (const [date, dateTasks] of tasksByDate) {
+        if (dateTasks.length > 0 && dateTasks.every(t => t.status === 'done')) {
+          completedDates.add(date);
+        }
       }
 
       // Calculate streak
@@ -72,19 +66,26 @@ export function DailyStreakGrid({ allTasks, allGroups }: Props) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
-        if (validDates.has(dateStr)) streak++;
+        if (completedDates.has(dateStr)) streak++;
         else break;
       }
 
-      items.push({ id: group.id, name: group.name, type: 'group', completedDates: validDates, currentStreak: streak });
+      items.push({ id: group.id, name: group.name, type: 'group', completedDates, currentStreak: streak });
     }
 
-    // Individual daily tasks (not in groups)
+    // Individual daily tasks (not in groups) — find all copies by title
+    const seenTitles = new Set<string>();
     for (const task of dailyTasks) {
+      if (seenTitles.has(task.title)) continue;
+      seenTitles.add(task.title);
+
       const completedDates = new Set<string>();
-      if (task.completedAt) {
-        const date = new Date(new Date(task.completedAt).getTime() - 5 * 3600000).toISOString().split('T')[0];
-        completedDates.add(date);
+      // Find all copies of this daily task across all dates
+      const allCopies = allTasks.filter(t => t.isDaily && !t.groupId && t.title === task.title);
+      for (const copy of allCopies) {
+        if (copy.status === 'done') {
+          completedDates.add(copy.date);
+        }
       }
 
       let streak = 0;
