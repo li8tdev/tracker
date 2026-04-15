@@ -73,12 +73,19 @@ export function DailyStreakGrid({ allTasks, allGroups }: Props) {
       items.push({ id: group.id, name: group.name, type: 'group', completedDates, currentStreak: streak });
     }
 
-    // Individual daily tasks (not in groups)
+    // Individual daily tasks (not in groups) — find all copies by title
+    const seenTitles = new Set<string>();
     for (const task of dailyTasks) {
+      if (seenTitles.has(task.title)) continue;
+      seenTitles.add(task.title);
+
       const completedDates = new Set<string>();
-      if (task.completedAt) {
-        const date = new Date(new Date(task.completedAt).getTime() - 5 * 3600000).toISOString().split('T')[0];
-        completedDates.add(date);
+      // Find all copies of this daily task across all dates
+      const allCopies = allTasks.filter(t => t.isDaily && !t.groupId && t.title === task.title);
+      for (const copy of allCopies) {
+        if (copy.status === 'done') {
+          completedDates.add(copy.date);
+        }
       }
 
       let streak = 0;
