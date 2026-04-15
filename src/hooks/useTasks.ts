@@ -181,25 +181,43 @@ export function useTasks() {
     });
   }, [groups]);
 
-  // Reset daily tasks to todo for the new day
+  // Reset daily tasks: preserve yesterday's records as snapshots, create fresh copies for new day
   const resetDailyTasks = useCallback((newDate: string) => {
-    // Reset individual daily tasks
-    setTasks(prev => prev.map(t => {
-      // Check if task itself is daily OR belongs to a daily group
-      const belongsToDailyGroup = t.groupId && groups.some(g => g.id === t.groupId && g.isDaily);
-      if (!t.isDaily && !belongsToDailyGroup) return t;
-      return {
-        ...t,
-        status: 'todo' as TaskStatus,
-        date: newDate,
-        completedAt: undefined,
-        startedAt: undefined,
-        pomodorosCompleted: 0,
-        overtimeSeconds: 0,
-        totalWorkSeconds: 0,
-      };
-    }));
-    // Reset daily groups
+    setTasks(prev => {
+      const newTasks: Task[] = [];
+      const seen = new Set<string>();
+      prev.forEach(t => {
+        const belongsToDailyGroup = t.groupId && groups.some(g => g.id === t.groupId && g.isDaily);
+        if (!t.isDaily && !belongsToDailyGroup) return;
+        // Skip if we already have a fresh copy for this date (e.g. double-click protection)
+        if (t.date === newDate && t.status === 'todo') return;
+        // Only create a new copy if one doesn't already exist for newDate with same title+group
+        const key = `${t.title}::${t.groupId ?? ''}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        newTasks.push({
+          ...t,
+          id: generateId(),
+          status: 'todo' as TaskStatus,
+          date: newDate,
+          completedAt: undefined,
+          startedAt: undefined,
+          pomodorosCompleted: 0,
+          overtimeSeconds: 0,
+          totalWorkSeconds: 0,
+          createdAt: new Date().toISOString(),
+        });
+      });
+      // Keep all old tasks (historical) + add new fresh copies
+      // But remove any existing todo daily tasks for newDate to avoid duplicates
+      const filtered = prev.filter(t => {
+        const belongsToDailyGroup = t.groupId && groups.some(g => g.id === t.groupId && g.isDaily);
+        if ((t.isDaily || belongsToDailyGroup) && t.date === newDate && t.status === 'todo') return false;
+        return true;
+      });
+      return [...filtered, ...newTasks];
+    });
+    // Daily groups: keep old records, update group date for display purposes
     setGroups(prev => prev.map(g => {
       if (!g.isDaily) return g;
       return { ...g, date: newDate, completedAt: undefined };
