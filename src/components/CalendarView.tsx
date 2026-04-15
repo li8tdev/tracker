@@ -142,13 +142,10 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
     // Individual scheduled tasks (not belonging to a group with scheduledTime)
     const groupsWithSchedule = new Set(allGroups.filter(g => g.scheduledTime).map(g => g.id));
     
+    // Individual scheduled tasks on this date (not belonging to a group with scheduledTime)
     const directTasks = allTasks.filter(t => t.date === selectedDateStr && t.scheduledTime);
-    const dailyTasks = allTasks.filter(t => {
-      if (t.date === selectedDateStr) return false;
-      return t.isDaily && t.scheduledTime;
-    });
 
-    [...directTasks, ...dailyTasks].forEach(t => {
+    directTasks.forEach(t => {
       // Skip tasks that belong to a group shown as a block
       if (t.groupId && groupsWithSchedule.has(t.groupId)) return;
 
@@ -174,12 +171,7 @@ export function CalendarView({ allTasks, allGroups = [], selectedDate, onDateCha
   // Unscheduled tasks for the sidebar
   const unscheduledTasks = useMemo(() => {
     const groupsWithSchedule = new Set(allGroups.filter(g => g.scheduledTime).map(g => g.id));
-    const direct = allTasks.filter(t => t.date === selectedDateStr && !t.scheduledTime && !(t.groupId && groupsWithSchedule.has(t.groupId)));
-    const daily = allTasks.filter(t => {
-      if (t.date === selectedDateStr) return false;
-      return t.isDaily && !t.scheduledTime && !(t.groupId && groupsWithSchedule.has(t.groupId));
-    });
-    return [...direct, ...daily];
+    return allTasks.filter(t => t.date === selectedDateStr && !t.scheduledTime && !(t.groupId && groupsWithSchedule.has(t.groupId)));
   }, [allTasks, allGroups, selectedDateStr]);
 
   const taskDates = useMemo(() => {
