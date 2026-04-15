@@ -231,7 +231,18 @@ export function useTasks() {
       .filter(g => tasks.some(t => t.groupId === g.id && t.date === selectedDate))
       .map(g => g.id)
   );
-  const dayTasks = tasks.filter(t => t.date === selectedDate || t.isDaily || (t.groupId && dailyGroupIds.has(t.groupId)) || (t.groupId && projectGroupsOnDate.has(t.groupId)));
+  // Daily tasks: show by their actual date (each day has its own copies now)
+  // For today/selected date that matches a daily group's current date, also show those
+  const dayTasks = tasks.filter(t => {
+    if (t.date === selectedDate) return true;
+    // Show daily group tasks if the group's current date matches selectedDate
+    if (t.groupId && dailyGroupIds.has(t.groupId)) {
+      const group = groups.find(g => g.id === t.groupId);
+      if (group && group.date === selectedDate && t.date === selectedDate) return true;
+    }
+    if (t.groupId && projectGroupsOnDate.has(t.groupId)) return true;
+    return false;
+  });
   const dayGroups = groups.filter(g => g.date === selectedDate || g.isDaily || projectGroupsOnDate.has(g.id));
   const allTasks = tasks;
 
