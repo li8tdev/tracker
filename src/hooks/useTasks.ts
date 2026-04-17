@@ -171,6 +171,7 @@ export function useTasks() {
     });
   }, []);
 
+  const duplicateTask = useCallback((id: string) => {
     setTasks(prev => {
       const original = prev.find(t => t.id === id);
       if (!original) return prev;
