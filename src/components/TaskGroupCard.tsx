@@ -559,6 +559,7 @@ export function TaskGroupCard({
                     onStartBreak={onStartBreak}
                     onContinueNext={onContinueNext}
                     onFinishTask={onFinishTask}
+                    onReorder={onReorderTask}
                   />
                 );
               })
