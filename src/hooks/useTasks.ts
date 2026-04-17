@@ -276,6 +276,6 @@ export function useTasks() {
     tasks: dayTasks, allTasks, groups: dayGroups, allGroups: groups,
     addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups,
     incrementPomodoro, addOvertime, setTotalWork, editTask,
-    addGroup, editGroup, deleteGroup, resetDailyTasks,
+    addGroup, editGroup, deleteGroup, resetDailyTasks, reorderTask,
   };
 }
