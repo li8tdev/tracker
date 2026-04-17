@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
-import { TaskStatus, getNowUTC5 } from '@/lib/storage';
+import { TaskStatus, getNowUTC5, getToday } from '@/lib/storage';
 import { useTimer } from '@/hooks/useTimer';
 import { useDaySession } from '@/hooks/useDaySession';
 import { requestNotificationPermission, sendNotification } from '@/lib/notifications';
@@ -398,6 +398,7 @@ const Index = () => {
   }, [allTasks, getRemainingForTimer, overtimeCounters, pomodoroMeta, remove, session.endDay, stop, resetDailyTasks]);
 
   const handleStartDay = () => {
+    setSelectedDate(getToday());
     session.startDay();
     requestNotificationPermission();
     toast('🚀 ¡Día iniciado!', { description: 'Recibirás recordatorios cada hora para Workana.' });
