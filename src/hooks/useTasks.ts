@@ -187,38 +187,38 @@ export function useTasks() {
   // Reset daily tasks: preserve yesterday's records as snapshots, create fresh copies for new day
   const resetDailyTasks = useCallback((newDate: string) => {
     setTasks(prev => {
-      const newTasks: Task[] = [];
-      const seen = new Set<string>();
-      prev.forEach(t => {
-        const belongsToDailyGroup = t.groupId && groups.some(g => g.id === t.groupId && g.isDaily);
-        if (!t.isDaily && !belongsToDailyGroup) return;
-        // Skip if we already have a fresh copy for this date (e.g. double-click protection)
-        if (t.date === newDate && t.status === 'todo') return;
-        // Only create a new copy if one doesn't already exist for newDate with same title+group
-        const key = `${t.title}::${t.groupId ?? ''}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        newTasks.push({
-          ...t,
-          id: generateId(),
-          status: 'todo' as TaskStatus,
-          date: newDate,
-          completedAt: undefined,
-          startedAt: undefined,
-          pomodorosCompleted: 0,
-          overtimeSeconds: 0,
-          totalWorkSeconds: 0,
-          createdAt: new Date().toISOString(),
+      const dailyGroupIdSet = new Set(groups.filter(g => g.isDaily).map(g => g.id));
+      const isDailyTask = (t: Task) => !!t.isDaily || (!!t.groupId && dailyGroupIdSet.has(t.groupId));
+
+      // Step 1: drop any existing todo copies for newDate so we can regenerate cleanly
+      const cleaned = prev.filter(t => !(isDailyTask(t) && t.date === newDate && t.status === 'todo'));
+
+      // Step 2: pick the most recent template per (title + group) across ALL daily tasks
+      // Sort by createdAt desc so the first occurrence we keep is the freshest template
+      const templates = new Map<string, Task>();
+      [...cleaned]
+        .filter(isDailyTask)
+        .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+        .forEach(t => {
+          const key = `${t.title}::${t.groupId ?? ''}`;
+          if (!templates.has(key)) templates.set(key, t);
         });
-      });
-      // Keep all old tasks (historical) + add new fresh copies
-      // But remove any existing todo daily tasks for newDate to avoid duplicates
-      const filtered = prev.filter(t => {
-        const belongsToDailyGroup = t.groupId && groups.some(g => g.id === t.groupId && g.isDaily);
-        if ((t.isDaily || belongsToDailyGroup) && t.date === newDate && t.status === 'todo') return false;
-        return true;
-      });
-      return [...filtered, ...newTasks];
+
+      // Step 3: build fresh copies for newDate from each template
+      const newTasks: Task[] = Array.from(templates.values()).map(t => ({
+        ...t,
+        id: generateId(),
+        status: 'todo' as TaskStatus,
+        date: newDate,
+        completedAt: undefined,
+        startedAt: undefined,
+        pomodorosCompleted: 0,
+        overtimeSeconds: 0,
+        totalWorkSeconds: 0,
+        createdAt: new Date().toISOString(),
+      }));
+
+      return [...cleaned, ...newTasks];
     });
     // Daily groups: keep old records, update group date for display purposes
     setGroups(prev => prev.map(g => {
