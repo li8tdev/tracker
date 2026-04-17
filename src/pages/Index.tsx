@@ -52,7 +52,7 @@ function getTaskIdFromTimerId(timerId: string) {
 }
 
 const Index = () => {
-  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks, reorderTask } = useTasks();
+  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks, reorderTask, reorderGroup } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar' | 'ram'>('tasks');
