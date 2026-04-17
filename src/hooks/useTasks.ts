@@ -135,6 +135,29 @@ export function useTasks() {
     setTasks(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const reorderTask = useCallback((draggedId: string, targetId: string, position: 'before' | 'after') => {
+    if (draggedId === targetId) return;
+    setTasks(prev => {
+      const dragged = prev.find(t => t.id === draggedId);
+      const target = prev.find(t => t.id === targetId);
+      if (!dragged || !target) return prev;
+      const without = prev.filter(t => t.id !== draggedId);
+      const targetIdx = without.findIndex(t => t.id === targetId);
+      if (targetIdx === -1) return prev;
+      // If dragged status differs from target, align it so it appears in the same column
+      const aligned: Task = dragged.status !== target.status
+        ? {
+            ...dragged,
+            status: target.status,
+            startedAt: target.status === 'in_progress' ? new Date().toISOString() : dragged.startedAt,
+            completedAt: target.status === 'done' ? new Date().toISOString() : undefined,
+          }
+        : dragged;
+      const insertAt = position === 'before' ? targetIdx : targetIdx + 1;
+      return [...without.slice(0, insertAt), aligned, ...without.slice(insertAt)];
+    });
+  }, []);
+
   const duplicateTask = useCallback((id: string) => {
     setTasks(prev => {
       const original = prev.find(t => t.id === id);
