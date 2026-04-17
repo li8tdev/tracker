@@ -52,7 +52,7 @@ function getTaskIdFromTimerId(timerId: string) {
 }
 
 const Index = () => {
-  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks } = useTasks();
+  const { tasks, allTasks, groups, allGroups, addTask, updateStatus, deleteTask, duplicateTask, duplicateGroup, selectedDate, setSelectedDate, setTasks, setGroups, incrementPomodoro, addOvertime, setTotalWork, editTask, addGroup, editGroup, deleteGroup, resetDailyTasks, reorderTask } = useTasks();
   const session = useDaySession();
   const workanaInitialized = useRef(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'calendar' | 'ram'>('tasks');
@@ -751,7 +751,7 @@ const Index = () => {
                   })}
                   {todo.length === 0 && groups.filter(g => getGroupTasks(g.id).length === 0 && !g.completedAt).length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'todo')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
                   {todo.map(t => (
-                   <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
+                   <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} onReorder={reorderTask} />
                   ))}
                 </div>
               </div>
@@ -791,6 +791,7 @@ const Index = () => {
                       onStartBreak={handleStartBreak}
                       onContinueNext={handleContinueNext}
                       onFinishTask={handleFinishTask}
+                      onReorder={reorderTask}
                     />
                   ))}
                 </div>
@@ -817,7 +818,7 @@ const Index = () => {
                   })}
                   {done.length === 0 && groups.filter(g => g.completedAt && getGroupTasks(g.id).length > 0).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
                   {done.map(t => (
-                    <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
+                    <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} onReorder={reorderTask} />
                   ))}
                 </div>
               </div>
