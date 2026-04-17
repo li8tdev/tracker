@@ -172,8 +172,34 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
       }}
       onDragEnd={(e) => {
         (e.currentTarget as HTMLElement).style.opacity = '';
+        setDropIndicator(null);
       }}
-      className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 cursor-grab active:cursor-grabbing ${task.status === 'done' ? 'opacity-50' : ''}`}
+      onDragOver={(e) => {
+        if (!onReorder) return;
+        const data = e.dataTransfer.types.includes('text/plain');
+        if (!data) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const isBefore = e.clientY < rect.top + rect.height / 2;
+        setDropIndicator(isBefore ? 'before' : 'after');
+      }}
+      onDragLeave={() => setDropIndicator(null)}
+      onDrop={(e) => {
+        if (!onReorder) return;
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (!draggedId || draggedId.startsWith('group:') || draggedId === task.id) {
+          setDropIndicator(null);
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        const position = dropIndicator ?? 'before';
+        setDropIndicator(null);
+        onReorder(draggedId, task.id, position);
+      }}
+      className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 cursor-grab active:cursor-grabbing ${task.status === 'done' ? 'opacity-50' : ''} ${dropIndicator === 'before' ? 'border-t-2 border-accent' : ''} ${dropIndicator === 'after' ? 'border-b-2 border-accent' : ''}`}
     >
       {/* Main row */}
       <div className="flex items-start gap-2">
