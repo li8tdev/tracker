@@ -43,8 +43,9 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask }: Props) {
+export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask, onReorder }: Props) {
   const config = statusConfig[task.status];
+  const [dropIndicator, setDropIndicator] = useState<'before' | 'after' | null>(null);
   const Icon = config.icon;
   const isInProgress = task.status === 'in_progress';
   const phase = pomodoroState?.phase ?? 'idle';
