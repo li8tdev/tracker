@@ -300,6 +300,7 @@ export function TaskGroupCard({
           return;
         }
         e.dataTransfer.setData('text/plain', `group:${group.id}`);
+        e.dataTransfer.setData('application/x-group', group.id);
         e.dataTransfer.effectAllowed = 'move';
         (e.currentTarget as HTMLElement).style.opacity = '0.5';
       }}
@@ -309,7 +310,8 @@ export function TaskGroupCard({
       }}
       onDragOver={(e) => {
         if (!onReorderGroup) return;
-        if (!e.dataTransfer.types.includes('text/plain')) return;
+        // Only react if a group is being dragged — let task drags bubble to the column
+        if (!e.dataTransfer.types.includes('application/x-group')) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
@@ -319,6 +321,11 @@ export function TaskGroupCard({
       }}
       onDragLeave={() => setGroupDropIndicator(null)}
       onDrop={(e) => {
+        // Only handle group drops; let other drops bubble to the column
+        if (!e.dataTransfer.types.includes('application/x-group')) {
+          setGroupDropIndicator(null);
+          return;
+        }
         if (!onReorderGroup) {
           setGroupDropIndicator(null);
           return;
