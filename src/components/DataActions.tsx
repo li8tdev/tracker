@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, Upload, Trash2 } from 'lucide-react';
+import { Download, Upload, Trash2, Wrench } from 'lucide-react';
 import { Task, TaskGroup, exportData, importData, resetAllData } from '@/lib/storage';
 import { toast } from 'sonner';
 
@@ -7,9 +7,10 @@ interface Props {
   tasks: Task[];
   groups: TaskGroup[];
   onImport: (tasks: Task[], groups: TaskGroup[]) => void;
+  onRepairDaily?: () => void;
 }
 
-export function DataActions({ tasks, groups, onImport }: Props) {
+export function DataActions({ tasks, groups, onImport, onRepairDaily }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -51,6 +52,15 @@ export function DataActions({ tasks, groups, onImport }: Props) {
       >
         <Upload size={13} /> Importar
       </button>
+      {onRepairDaily && (
+        <button
+          onClick={onRepairDaily}
+          className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors text-muted-foreground"
+          title="Regenera tareas diarias y subtareas faltantes para hoy a partir del historial"
+        >
+          <Wrench size={13} /> Reparar diarias
+        </button>
+      )}
       <button
         onClick={handleReset}
         className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg transition-colors ${confirmReset ? 'bg-destructive text-destructive-foreground' : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'}`}
