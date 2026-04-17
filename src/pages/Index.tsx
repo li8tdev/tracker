@@ -818,7 +818,7 @@ const Index = () => {
                   })}
                   {done.length === 0 && groups.filter(g => g.completedAt && getGroupTasks(g.id).length > 0).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
                   {done.map(t => (
-                    <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
+                    <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} onReorder={reorderTask} />
                   ))}
                 </div>
               </div>
