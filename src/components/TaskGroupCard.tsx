@@ -43,9 +43,47 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-function SimpleSubtask({ task, onStatusChange, onReorder }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void; onReorder?: (draggedId: string, targetId: string, position: 'before' | 'after') => void }) {
+function SimpleSubtask({ task, onStatusChange, onEdit, onDelete, onReorder }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void; onEdit?: (id: string, updates: { title?: string }) => void; onDelete?: (id: string) => void; onReorder?: (draggedId: string, targetId: string, position: 'before' | 'after') => void }) {
   const isDone = task.status === 'done';
   const [indicator, setIndicator] = useState<'before' | 'after' | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+
+  const saveEdit = () => {
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== task.title) onEdit?.(task.id, { title: trimmed });
+    setEditing(false);
+  };
+  const cancelEdit = () => {
+    setEditTitle(task.title);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-secondary/40">
+        <button
+          onClick={() => onStatusChange(task.id, isDone ? 'todo' : 'done')}
+          className={`shrink-0 ${isDone ? 'text-success' : 'text-muted-foreground'}`}
+        >
+          {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+        </button>
+        <input
+          autoFocus
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+            if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+          }}
+          className="flex-1 bg-background border border-border rounded px-1.5 py-0.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-accent/30"
+        />
+        <button onClick={saveEdit} className="w-5 h-5 flex items-center justify-center rounded bg-accent/15 text-accent hover:bg-accent/25"><Check size={11} /></button>
+        <button onClick={cancelEdit} className="w-5 h-5 flex items-center justify-center rounded bg-destructive/10 text-destructive hover:bg-destructive/20"><X size={11} /></button>
+      </div>
+    );
+  }
+
   return (
     <div
       draggable
@@ -78,7 +116,7 @@ function SimpleSubtask({ task, onStatusChange, onReorder }: { task: Task; onStat
         e.stopPropagation();
         onReorder(draggedId, task.id, indicator ?? 'before');
       }}
-      className={`flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''} ${indicator === 'before' ? 'border-t-2 border-t-accent' : ''} ${indicator === 'after' ? 'border-b-2 border-b-accent' : ''}`}
+      className={`group/sub flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''} ${indicator === 'before' ? 'border-t-2 border-t-accent' : ''} ${indicator === 'after' ? 'border-b-2 border-b-accent' : ''}`}
     >
       <button
         onClick={() => onStatusChange(task.id, isDone ? 'todo' : 'done')}
@@ -86,9 +124,27 @@ function SimpleSubtask({ task, onStatusChange, onReorder }: { task: Task; onStat
       >
         {isDone ? <CheckCircle2 size={14} /> : <Circle size={14} />}
       </button>
-      <span className={`text-[12px] ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+      <span className={`flex-1 text-[12px] ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
         {task.title}
       </span>
+      {onEdit && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setEditTitle(task.title); setEditing(true); }}
+          className="opacity-0 group-hover/sub:opacity-100 w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-accent hover:bg-accent/10 transition-all"
+          title="Editar nombre"
+        >
+          <Pencil size={11} />
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+          className="opacity-0 group-hover/sub:opacity-100 w-5 h-5 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          title="Eliminar"
+        >
+          <Trash2 size={11} />
+        </button>
+      )}
     </div>
   );
 }
@@ -545,7 +601,7 @@ export function TaskGroupCard({
             {isDaily ? (
               <>
                 {tasks.map(t => (
-                  <SimpleSubtask key={t.id} task={t} onStatusChange={onStatusChange} onReorder={onReorderTask} />
+                  <SimpleSubtask key={t.id} task={t} onStatusChange={onStatusChange} onEdit={onEdit} onDelete={onDelete} onReorder={onReorderTask} />
                 ))}
               </>
             ) : (
