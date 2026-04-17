@@ -703,7 +703,11 @@ const Index = () => {
                </button>
             </div>
             <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
-            <DataActions tasks={allTasks} groups={allGroups} onImport={(importedTasks, importedGroups) => {
+            <DataActions tasks={allTasks} groups={allGroups} onRepairDaily={() => {
+              resetDailyTasks(getToday());
+              setSelectedDate(getToday());
+              toast.success('Tareas diarias regeneradas para hoy');
+            }} onImport={(importedTasks, importedGroups) => {
               // Merge: replace existing by id, add new ones
               setTasks(prev => {
                 const existingIds = new Set(importedTasks.map(t => t.id));
