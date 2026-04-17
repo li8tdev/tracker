@@ -538,7 +538,7 @@ export function TaskGroupCard({
             {isDaily ? (
               <>
                 {tasks.map(t => (
-                  <SimpleSubtask key={t.id} task={t} onStatusChange={onStatusChange} />
+                  <SimpleSubtask key={t.id} task={t} onStatusChange={onStatusChange} onReorder={onReorderTask} />
                 ))}
               </>
             ) : (
