@@ -158,7 +158,19 @@ export function useTasks() {
     });
   }, []);
 
-  const duplicateTask = useCallback((id: string) => {
+  const reorderGroup = useCallback((draggedId: string, targetId: string, position: 'before' | 'after') => {
+    if (draggedId === targetId) return;
+    setGroups(prev => {
+      const dragged = prev.find(g => g.id === draggedId);
+      if (!dragged) return prev;
+      const without = prev.filter(g => g.id !== draggedId);
+      const targetIdx = without.findIndex(g => g.id === targetId);
+      if (targetIdx === -1) return prev;
+      const insertAt = position === 'before' ? targetIdx : targetIdx + 1;
+      return [...without.slice(0, insertAt), dragged, ...without.slice(insertAt)];
+    });
+  }, []);
+
     setTasks(prev => {
       const original = prev.find(t => t.id === id);
       if (!original) return prev;
