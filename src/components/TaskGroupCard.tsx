@@ -33,6 +33,7 @@ interface Props {
   onStartBreak?: (id: string) => void;
   onContinueNext?: (id: string) => void;
   onFinishTask?: (id: string) => void;
+  onReorderGroup?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
 }
 
 function formatTime(seconds: number) {
