@@ -283,8 +283,34 @@ export function TaskGroupCard({
       }}
       onDragEnd={(e) => {
         (e.currentTarget as HTMLElement).style.opacity = '1';
+        setGroupDropIndicator(null);
       }}
-      className={`rounded-lg border transition-all overflow-hidden cursor-grab active:cursor-grabbing ${borderClass}`}
+      onDragOver={(e) => {
+        if (!onReorderGroup) return;
+        if (!e.dataTransfer.types.includes('text/plain')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const isBefore = e.clientY < rect.top + rect.height / 2;
+        setGroupDropIndicator(isBefore ? 'before' : 'after');
+      }}
+      onDragLeave={() => setGroupDropIndicator(null)}
+      onDrop={(e) => {
+        if (!onReorderGroup) {
+          setGroupDropIndicator(null);
+          return;
+        }
+        const data = e.dataTransfer.getData('text/plain');
+        setGroupDropIndicator(null);
+        if (!data.startsWith('group:')) return;
+        const draggedId = data.replace('group:', '');
+        if (draggedId === group.id) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onReorderGroup(draggedId, group.id, groupDropIndicator ?? 'before');
+      }}
+      className={`rounded-lg border transition-all overflow-hidden cursor-grab active:cursor-grabbing ${borderClass} ${groupDropIndicator === 'before' ? 'border-t-2 border-t-accent' : ''} ${groupDropIndicator === 'after' ? 'border-b-2 border-b-accent' : ''}`}
     >
       <Collapsible open={open} onOpenChange={setOpen}>
         <div className="flex items-start gap-1.5 p-2.5">
