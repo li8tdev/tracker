@@ -751,7 +751,7 @@ const Index = () => {
                   })}
                   {todo.length === 0 && groups.filter(g => getGroupTasks(g.id).length === 0 && !g.completedAt).length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'todo')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Sin tareas pendientes</p>}
                   {todo.map(t => (
-                   <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} />
+                   <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} onReorder={reorderTask} />
                   ))}
                 </div>
               </div>
