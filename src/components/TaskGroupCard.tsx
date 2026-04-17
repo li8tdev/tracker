@@ -42,8 +42,9 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-function SimpleSubtask({ task, onStatusChange }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void }) {
+function SimpleSubtask({ task, onStatusChange, onReorder }: { task: Task; onStatusChange: (id: string, status: TaskStatus) => void; onReorder?: (draggedId: string, targetId: string, position: 'before' | 'after') => void }) {
   const isDone = task.status === 'done';
+  const [indicator, setIndicator] = useState<'before' | 'after' | null>(null);
   return (
     <div
       draggable
@@ -55,8 +56,28 @@ function SimpleSubtask({ task, onStatusChange }: { task: Task; onStatusChange: (
       }}
       onDragEnd={(e) => {
         (e.currentTarget as HTMLElement).style.opacity = '';
+        setIndicator(null);
       }}
-      className={`flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''}`}
+      onDragOver={(e) => {
+        if (!onReorder) return;
+        if (!e.dataTransfer.types.includes('text/plain')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setIndicator(e.clientY < rect.top + rect.height / 2 ? 'before' : 'after');
+      }}
+      onDragLeave={() => setIndicator(null)}
+      onDrop={(e) => {
+        if (!onReorder) return;
+        const draggedId = e.dataTransfer.getData('text/plain');
+        setIndicator(null);
+        if (!draggedId || draggedId.startsWith('group:') || draggedId === task.id) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onReorder(draggedId, task.id, indicator ?? 'before');
+      }}
+      className={`flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${isDone ? 'opacity-50' : ''} ${indicator === 'before' ? 'border-t-2 border-t-accent' : ''} ${indicator === 'after' ? 'border-b-2 border-b-accent' : ''}`}
     >
       <button
         onClick={() => onStatusChange(task.id, isDone ? 'todo' : 'done')}
