@@ -791,6 +791,7 @@ const Index = () => {
                       onStartBreak={handleStartBreak}
                       onContinueNext={handleContinueNext}
                       onFinishTask={handleFinishTask}
+                      onReorder={reorderTask}
                     />
                   ))}
                 </div>
