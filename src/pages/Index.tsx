@@ -623,6 +623,57 @@ const Index = () => {
   const todo = ungroupedTasks.filter(t => t.status === 'todo');
   const inProgress = ungroupedTasks.filter(t => t.status === 'in_progress');
   const done = ungroupedTasks.filter(t => t.status === 'done');
+
+  // Build a mixed (tasks + groups) list per column, sorted by createdAt ascending.
+  // Groups are included if any of their tasks belong to that column status.
+  type MixedItem =
+    | { kind: 'task'; task: typeof tasks[number]; createdAt: string }
+    | { kind: 'group'; group: typeof groups[number]; tasks: typeof tasks; createdAt: string };
+
+  const buildMixed = (status: 'todo' | 'in_progress' | 'done'): MixedItem[] => {
+    const items: MixedItem[] = [];
+    const taskList = status === 'todo' ? todo : status === 'in_progress' ? inProgress : done;
+    taskList.forEach(t => items.push({ kind: 'task', task: t, createdAt: t.createdAt }));
+    groups.forEach(g => {
+      const gt = getGroupTasks(g.id);
+      if (status === 'todo') {
+        // Empty groups (no tasks yet) only show in todo
+        if (gt.length === 0 && !g.completedAt) {
+          items.push({ kind: 'group', group: g, tasks: [], createdAt: g.createdAt });
+          return;
+        }
+        if (gt.length > 0 && gt.some(t => t.status === 'todo')) {
+          items.push({ kind: 'group', group: g, tasks: gt, createdAt: g.createdAt });
+        }
+      } else if (status === 'in_progress') {
+        if (gt.some(t => t.status === 'in_progress')) {
+          items.push({ kind: 'group', group: g, tasks: gt, createdAt: g.createdAt });
+        }
+      } else {
+        if (g.completedAt && gt.length > 0) {
+          items.push({ kind: 'group', group: g, tasks: gt, createdAt: g.createdAt });
+        }
+      }
+    });
+    return items.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
+  };
+
+  const todoMixed = buildMixed('todo');
+  const inProgressMixed = buildMixed('in_progress');
+  const doneMixed = buildMixed('done');
+
+  const renderGroupCard = (g: typeof groups[number], gt: typeof tasks) => (
+    <TaskGroupCard
+      key={g.id} group={g} tasks={gt}
+      onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup}
+      onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange}
+      onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask}
+      getPomodoroState={getPomodoroState}
+      onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset}
+      onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask}
+      onReorderGroup={reorderGroup} onReorderTask={reorderTask} onReorderMixed={reorderMixed}
+    />
+  );
   const allDayDone = tasks.filter(t => t.status === 'done');
   const allDayTasks = tasks;
   const completionRate = allDayTasks.length > 0 ? Math.round((allDayDone.length / allDayTasks.length) * 100) : 0;
