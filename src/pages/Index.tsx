@@ -809,32 +809,28 @@ const Index = () => {
                   <span className="text-xs text-muted-foreground ml-auto">{inProgress.length}</span>
                 </div>
                 <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
-                  {groups.map(g => {
-                    const gt = getGroupTasks(g.id);
-                    const hasInProgress = gt.some(t => t.status === 'in_progress');
-                    if (!hasInProgress) return null;
-                    return (
-                      <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} onReorderGroup={reorderGroup} onReorderTask={reorderTask} />
-                    );
-                  })}
-                  {inProgress.length === 0 && groups.filter(g => getGroupTasks(g.id).some(t => t.status === 'in_progress')).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada en progreso</p>}
-                  {inProgress.map(t => (
-                    <TaskCard
-                      key={t.id}
-                      task={t}
-                      onStatusChange={handleStatusChange}
-                      onDelete={deleteTask}
-                      onEdit={editTask}
-                      pomodoroState={getPomodoroState(t.id)}
-                      onPomodoroStart={handlePomodoroStart}
-                      onPomodoroStop={handlePomodoroStop}
-                      onPomodoroReset={handlePomodoroReset}
-                      onStartBreak={handleStartBreak}
-                      onContinueNext={handleContinueNext}
-                      onFinishTask={handleFinishTask}
-                      onReorder={reorderTask}
-                    />
-                  ))}
+                  {inProgressMixed.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada en progreso</p>}
+                  {inProgressMixed.map(item => item.kind === 'group'
+                    ? renderGroupCard(item.group, item.tasks)
+                    : (
+                      <TaskCard
+                        key={item.task.id}
+                        task={item.task}
+                        onStatusChange={handleStatusChange}
+                        onDelete={deleteTask}
+                        onEdit={editTask}
+                        pomodoroState={getPomodoroState(item.task.id)}
+                        onPomodoroStart={handlePomodoroStart}
+                        onPomodoroStop={handlePomodoroStop}
+                        onPomodoroReset={handlePomodoroReset}
+                        onStartBreak={handleStartBreak}
+                        onContinueNext={handleContinueNext}
+                        onFinishTask={handleFinishTask}
+                        onReorder={reorderTask}
+                        onReorderMixed={reorderMixed}
+                      />
+                    )
+                  )}
                 </div>
               </div>
 
