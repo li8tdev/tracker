@@ -255,7 +255,7 @@ export function TaskGroupCard({
   group, tasks, onEditGroup, onDeleteGroup, onDuplicateGroup, onAddSubtask,
   onStatusChange, onDelete, onDuplicate, onEdit,
   getPomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset,
-  onStartBreak, onContinueNext, onFinishTask, onReorderGroup, onReorderTask,
+  onStartBreak, onContinueNext, onFinishTask, onReorderGroup, onReorderTask, onReorderMixed,
 }: Props) {
   const [groupDropIndicator, setGroupDropIndicator] = useState<'before' | 'after' | null>(null);
   const [open, setOpen] = useState(false);
