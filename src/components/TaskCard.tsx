@@ -29,6 +29,7 @@ interface Props {
   onContinueNext?: (id: string) => void;
   onFinishTask?: (id: string) => void;
   onReorder?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
+  onReorderMixed?: (draggedId: string, draggedKind: 'task' | 'group', targetId: string, targetKind: 'task' | 'group', position: 'before' | 'after') => void;
 }
 
 const statusConfig: Record<TaskStatus, { icon: typeof Circle; label: string; className: string; next: TaskStatus }> = {
