@@ -319,15 +319,19 @@ export function TaskGroupCard({
     e.preventDefault();
     if (!newTitle.trim()) return;
     if (isDaily) {
-      onAddSubtask(newTitle.trim(), 1, group.id, group.date, undefined, undefined);
+      onAddSubtask(newTitle.trim(), 1, group.id, group.date, undefined, undefined, undefined);
     } else {
       const dateStr = newDate.toISOString().split('T')[0];
-      onAddSubtask(newTitle.trim(), newPomodoros, group.id, dateStr, newTime || undefined, newDaily || undefined);
+      const pomCount = newTimerMode === 'pomodoro' ? newPomodoros : 1;
+      const customMin = newTimerMode === 'custom' ? newCustomMinutes : undefined;
+      onAddSubtask(newTitle.trim(), pomCount, group.id, dateStr, newTime || undefined, newDaily || undefined, customMin);
     }
     setNewTitle('');
     setNewPomodoros(1);
     setNewTime('');
     setNewDaily(false);
+    setNewTimerMode('pomodoro');
+    setNewCustomMinutes(30);
     setAdding(false);
   };
 
