@@ -274,6 +274,8 @@ export function TaskGroupCard({
   const [newDate, setNewDate] = useState<Date>(new Date(group.date + 'T12:00:00'));
   const [newDaily, setNewDaily] = useState(false);
   const [newCalOpen, setNewCalOpen] = useState(false);
+  const [newTimerMode, setNewTimerMode] = useState<'pomodoro' | 'custom'>('pomodoro');
+  const [newCustomMinutes, setNewCustomMinutes] = useState(30);
   const [showActions, setShowActions] = useState(false);
 
   const isDaily = !!group.isDaily;
