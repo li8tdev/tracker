@@ -606,8 +606,8 @@ const Index = () => {
     return <StartDayScreen onStart={handleStartDay} />;
   }
 
-  const handleAddSubtask = (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => {
-    addTask(title, pomodoroCount, date ?? selectedDate, scheduledTime, groupId, isDaily);
+  const handleAddSubtask = (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean, customTimeMinutes?: number) => {
+    addTask(title, pomodoroCount, date ?? selectedDate, scheduledTime, groupId, isDaily, customTimeMinutes);
   };
 
   // For daily groups, only show tasks matching the selected date; for project groups show all
