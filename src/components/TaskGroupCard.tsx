@@ -35,6 +35,7 @@ interface Props {
   onFinishTask?: (id: string) => void;
   onReorderGroup?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
   onReorderTask?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
+  onReorderMixed?: (draggedId: string, draggedKind: 'task' | 'group', targetId: string, targetKind: 'task' | 'group', position: 'before' | 'after') => void;
 }
 
 function formatTime(seconds: number) {
