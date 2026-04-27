@@ -29,6 +29,7 @@ interface Props {
   onContinueNext?: (id: string) => void;
   onFinishTask?: (id: string) => void;
   onReorder?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
+  onReorderMixed?: (draggedId: string, draggedKind: 'task' | 'group', targetId: string, targetKind: 'task' | 'group', position: 'before' | 'after') => void;
 }
 
 const statusConfig: Record<TaskStatus, { icon: typeof Circle; label: string; className: string; next: TaskStatus }> = {
@@ -43,7 +44,7 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask, onReorder }: Props) {
+export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, pomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset, onStartBreak, onContinueNext, onFinishTask, onReorder, onReorderMixed }: Props) {
   const config = statusConfig[task.status];
   const [dropIndicator, setDropIndicator] = useState<'before' | 'after' | null>(null);
   const Icon = config.icon;
@@ -175,10 +176,10 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
         setDropIndicator(null);
       }}
       onDragOver={(e) => {
-        if (!onReorder) return;
-        // Ignore group drags — let them bubble to the column
-        if (e.dataTransfer.types.includes('application/x-group')) return;
-        if (!e.dataTransfer.types.includes('text/plain')) return;
+        const isGroup = e.dataTransfer.types.includes('application/x-group');
+        if (isGroup && !onReorderMixed) return;
+        if (!isGroup && !onReorder) return;
+        if (!isGroup && !e.dataTransfer.types.includes('text/plain')) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
@@ -188,21 +189,23 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
       }}
       onDragLeave={() => setDropIndicator(null)}
       onDrop={(e) => {
-        if (!onReorder) return;
-        // Ignore group drops — let them bubble to the column
-        if (e.dataTransfer.types.includes('application/x-group')) {
-          setDropIndicator(null);
-          return;
-        }
-        const draggedId = e.dataTransfer.getData('text/plain');
-        if (!draggedId || draggedId.startsWith('group:') || draggedId === task.id) {
-          setDropIndicator(null);
-          return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
+        const isGroup = e.dataTransfer.types.includes('application/x-group');
         const position = dropIndicator ?? 'before';
         setDropIndicator(null);
+        if (isGroup) {
+          if (!onReorderMixed) return;
+          const groupId = e.dataTransfer.getData('application/x-group');
+          if (!groupId) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onReorderMixed(groupId, 'group', task.id, 'task', position);
+          return;
+        }
+        if (!onReorder) return;
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (!draggedId || draggedId.startsWith('group:') || draggedId === task.id) return;
+        e.preventDefault();
+        e.stopPropagation();
         onReorder(draggedId, task.id, position);
       }}
       className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 cursor-grab active:cursor-grabbing ${task.status === 'done' ? 'opacity-50' : ''} ${dropIndicator === 'before' ? 'border-t-2 border-accent' : ''} ${dropIndicator === 'after' ? 'border-b-2 border-accent' : ''}`}

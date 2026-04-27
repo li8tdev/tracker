@@ -35,6 +35,7 @@ interface Props {
   onFinishTask?: (id: string) => void;
   onReorderGroup?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
   onReorderTask?: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
+  onReorderMixed?: (draggedId: string, draggedKind: 'task' | 'group', targetId: string, targetKind: 'task' | 'group', position: 'before' | 'after') => void;
 }
 
 function formatTime(seconds: number) {
@@ -254,7 +255,7 @@ export function TaskGroupCard({
   group, tasks, onEditGroup, onDeleteGroup, onDuplicateGroup, onAddSubtask,
   onStatusChange, onDelete, onDuplicate, onEdit,
   getPomodoroState, onPomodoroStart, onPomodoroStop, onPomodoroReset,
-  onStartBreak, onContinueNext, onFinishTask, onReorderGroup, onReorderTask,
+  onStartBreak, onContinueNext, onFinishTask, onReorderGroup, onReorderTask, onReorderMixed,
 }: Props) {
   const [groupDropIndicator, setGroupDropIndicator] = useState<'before' | 'after' | null>(null);
   const [open, setOpen] = useState(false);
@@ -371,9 +372,11 @@ export function TaskGroupCard({
         setGroupDropIndicator(null);
       }}
       onDragOver={(e) => {
-        if (!onReorderGroup) return;
-        // Only react if a group is being dragged — let task drags bubble to the column
-        if (!e.dataTransfer.types.includes('application/x-group')) return;
+        const isGroup = e.dataTransfer.types.includes('application/x-group');
+        const isTask = !isGroup && e.dataTransfer.types.includes('text/plain');
+        if (isGroup && !onReorderGroup) return;
+        if (isTask && !onReorderMixed) return;
+        if (!isGroup && !isTask) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
@@ -383,23 +386,27 @@ export function TaskGroupCard({
       }}
       onDragLeave={() => setGroupDropIndicator(null)}
       onDrop={(e) => {
-        // Only handle group drops; let other drops bubble to the column
-        if (!e.dataTransfer.types.includes('application/x-group')) {
-          setGroupDropIndicator(null);
-          return;
-        }
-        if (!onReorderGroup) {
-          setGroupDropIndicator(null);
-          return;
-        }
-        const data = e.dataTransfer.getData('text/plain');
+        const position = groupDropIndicator ?? 'before';
         setGroupDropIndicator(null);
-        if (!data.startsWith('group:')) return;
-        const draggedId = data.replace('group:', '');
-        if (draggedId === group.id) return;
+        const isGroup = e.dataTransfer.types.includes('application/x-group');
+        if (isGroup) {
+          if (!onReorderGroup) return;
+          const data = e.dataTransfer.getData('text/plain');
+          if (!data.startsWith('group:')) return;
+          const draggedId = data.replace('group:', '');
+          if (draggedId === group.id) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onReorderGroup(draggedId, group.id, position);
+          return;
+        }
+        // Task dropped on a group: cross reorder (place task before/after this group in mixed list)
+        if (!onReorderMixed) return;
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (!draggedId || draggedId.startsWith('group:')) return;
         e.preventDefault();
         e.stopPropagation();
-        onReorderGroup(draggedId, group.id, groupDropIndicator ?? 'before');
+        onReorderMixed(draggedId, 'task', group.id, 'group', position);
       }}
       className={`rounded-lg border transition-all overflow-hidden cursor-grab active:cursor-grabbing ${borderClass} ${groupDropIndicator === 'before' ? 'border-t-2 border-t-accent' : ''} ${groupDropIndicator === 'after' ? 'border-b-2 border-b-accent' : ''}`}
     >
