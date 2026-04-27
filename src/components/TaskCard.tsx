@@ -176,8 +176,9 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
       }}
       onDragOver={(e) => {
         if (!onReorder) return;
-        const data = e.dataTransfer.types.includes('text/plain');
-        if (!data) return;
+        // Ignore group drags — let them bubble to the column
+        if (e.dataTransfer.types.includes('application/x-group')) return;
+        if (!e.dataTransfer.types.includes('text/plain')) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
@@ -188,6 +189,11 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
       onDragLeave={() => setDropIndicator(null)}
       onDrop={(e) => {
         if (!onReorder) return;
+        // Ignore group drops — let them bubble to the column
+        if (e.dataTransfer.types.includes('application/x-group')) {
+          setDropIndicator(null);
+          return;
+        }
         const draggedId = e.dataTransfer.getData('text/plain');
         if (!draggedId || draggedId.startsWith('group:') || draggedId === task.id) {
           setDropIndicator(null);
