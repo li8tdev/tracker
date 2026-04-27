@@ -846,17 +846,11 @@ const Index = () => {
                   <span className="text-xs text-muted-foreground ml-auto">{done.length}</span>
                 </div>
                 <div className="space-y-1 overflow-y-auto max-h-[55vh] pr-1" style={{ scrollbarWidth: 'thin' }}>
-                  {groups.map(g => {
-                    const gt = getGroupTasks(g.id);
-                    if (!g.completedAt || gt.length === 0) return null;
-                    return (
-                      <TaskGroupCard key={g.id} group={g} tasks={gt} onEditGroup={editGroup} onDeleteGroup={deleteGroup} onDuplicateGroup={duplicateGroup} onAddSubtask={handleAddSubtask} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} getPomodoroState={getPomodoroState} onPomodoroStart={handlePomodoroStart} onPomodoroStop={handlePomodoroStop} onPomodoroReset={handlePomodoroReset} onStartBreak={handleStartBreak} onContinueNext={handleContinueNext} onFinishTask={handleFinishTask} onReorderGroup={reorderGroup} onReorderTask={reorderTask} />
-                    );
-                  })}
-                  {done.length === 0 && groups.filter(g => g.completedAt && getGroupTasks(g.id).length > 0).length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
-                  {done.map(t => (
-                    <TaskCard key={t.id} task={t} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} onReorder={reorderTask} />
-                  ))}
+                  {doneMixed.length === 0 && <p className="text-xs text-muted-foreground py-6 text-center">Nada completado aún</p>}
+                  {doneMixed.map(item => item.kind === 'group'
+                    ? renderGroupCard(item.group, item.tasks)
+                    : <TaskCard key={item.task.id} task={item.task} onStatusChange={handleStatusChange} onDelete={deleteTask} onDuplicate={duplicateTask} onEdit={editTask} onReorder={reorderTask} onReorderMixed={reorderMixed} />
+                  )}
                 </div>
               </div>
             </div>
