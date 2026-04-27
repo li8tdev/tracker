@@ -21,7 +21,7 @@ interface Props {
   onEditGroup: (id: string, updates: { name?: string; date?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number; customTimeMinutes?: number }) => void;
   onDeleteGroup: (id: string) => void;
   onDuplicateGroup?: (id: string) => void;
-  onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
+  onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean, customTimeMinutes?: number) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
@@ -274,6 +274,8 @@ export function TaskGroupCard({
   const [newDate, setNewDate] = useState<Date>(new Date(group.date + 'T12:00:00'));
   const [newDaily, setNewDaily] = useState(false);
   const [newCalOpen, setNewCalOpen] = useState(false);
+  const [newTimerMode, setNewTimerMode] = useState<'pomodoro' | 'custom'>('pomodoro');
+  const [newCustomMinutes, setNewCustomMinutes] = useState(30);
   const [showActions, setShowActions] = useState(false);
 
   const isDaily = !!group.isDaily;
@@ -317,15 +319,19 @@ export function TaskGroupCard({
     e.preventDefault();
     if (!newTitle.trim()) return;
     if (isDaily) {
-      onAddSubtask(newTitle.trim(), 1, group.id, group.date, undefined, undefined);
+      onAddSubtask(newTitle.trim(), 1, group.id, group.date, undefined, undefined, undefined);
     } else {
       const dateStr = newDate.toISOString().split('T')[0];
-      onAddSubtask(newTitle.trim(), newPomodoros, group.id, dateStr, newTime || undefined, newDaily || undefined);
+      const pomCount = newTimerMode === 'pomodoro' ? newPomodoros : 1;
+      const customMin = newTimerMode === 'custom' ? newCustomMinutes : undefined;
+      onAddSubtask(newTitle.trim(), pomCount, group.id, dateStr, newTime || undefined, newDaily || undefined, customMin);
     }
     setNewTitle('');
     setNewPomodoros(1);
     setNewTime('');
     setNewDaily(false);
+    setNewTimerMode('pomodoro');
+    setNewCustomMinutes(30);
     setAdding(false);
   };
 
@@ -644,11 +650,30 @@ export function TaskGroupCard({
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
-                      🍅
-                      <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
-                      <span className="w-3 text-center">{newPomodoros}</span>
-                      <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <div className="flex bg-secondary rounded-md p-0.5">
+                        <button type="button" onClick={() => setNewTimerMode('pomodoro')} className={`px-1 py-0.5 rounded text-[9px] font-medium transition-colors ${newTimerMode === 'pomodoro' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>🍅</button>
+                        <button type="button" onClick={() => setNewTimerMode('custom')} className={`px-1 py-0.5 rounded text-[9px] font-medium transition-colors ${newTimerMode === 'custom' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>⏱</button>
+                      </div>
+                      {newTimerMode === 'pomodoro' ? (
+                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <button type="button" onClick={() => setNewPomodoros(p => Math.max(1, p - 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Minus size={9} /></button>
+                          <span className="w-3 text-center">{newPomodoros}</span>
+                          <button type="button" onClick={() => setNewPomodoros(p => Math.min(10, p + 1))} className="w-5 h-5 flex items-center justify-center hover:bg-secondary rounded"><Plus size={9} /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-0.5">
+                          <input
+                            type="number"
+                            min={1}
+                            max={480}
+                            value={newCustomMinutes}
+                            onChange={e => setNewCustomMinutes(Math.max(1, Math.min(480, parseInt(e.target.value) || 1)))}
+                            className="w-12 bg-background border border-border rounded px-1 py-0.5 text-[10px] font-mono text-center focus:outline-none"
+                          />
+                          <span className="text-[10px] text-muted-foreground">min</span>
+                        </div>
+                      )}
                     </div>
                     <Popover open={newCalOpen} onOpenChange={setNewCalOpen}>
                       <PopoverTrigger asChild>
