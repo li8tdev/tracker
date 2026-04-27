@@ -171,6 +171,56 @@ export function useTasks() {
     });
   }, []);
 
+  // Cross reorder: place a task or group before/after another task or group in the same column
+  // by recomputing createdAt so the mixed render order reflects the move.
+  const reorderMixed = useCallback((
+    draggedId: string,
+    draggedKind: 'task' | 'group',
+    targetId: string,
+    targetKind: 'task' | 'group',
+    position: 'before' | 'after',
+  ) => {
+    if (draggedId === targetId && draggedKind === targetKind) return;
+
+    // Build mixed list of {id, kind, createdAt} sorted ascending by createdAt
+    const mixed = [
+      ...tasks.map(t => ({ id: t.id, kind: 'task' as const, createdAt: t.createdAt })),
+      ...groups.map(g => ({ id: g.id, kind: 'group' as const, createdAt: g.createdAt })),
+    ]
+      .filter(x => !(x.kind === draggedKind && x.id === draggedId))
+      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
+
+    const targetIdx = mixed.findIndex(x => x.kind === targetKind && x.id === targetId);
+    if (targetIdx === -1) return;
+
+    const beforeIdx = position === 'before' ? targetIdx - 1 : targetIdx;
+    const afterIdx = position === 'before' ? targetIdx : targetIdx + 1;
+
+    const beforeTime = beforeIdx >= 0 ? new Date(mixed[beforeIdx].createdAt).getTime() : 0;
+    const afterTime = afterIdx < mixed.length ? new Date(mixed[afterIdx].createdAt).getTime() : Date.now() + 1000 * 60 * 60 * 24;
+
+    let newTime: number;
+    if (beforeIdx < 0) {
+      // Insert at the very top: 1ms before the first
+      newTime = afterTime - 1;
+    } else if (afterIdx >= mixed.length) {
+      // Insert at the very bottom: 1ms after the last
+      newTime = beforeTime + 1;
+    } else {
+      newTime = Math.floor((beforeTime + afterTime) / 2);
+      if (newTime <= beforeTime) newTime = beforeTime + 1;
+    }
+
+    const newCreatedAt = new Date(newTime).toISOString();
+
+    if (draggedKind === 'task') {
+      setTasks(prev => prev.map(t => t.id === draggedId ? { ...t, createdAt: newCreatedAt } : t));
+    } else {
+      setGroups(prev => prev.map(g => g.id === draggedId ? { ...g, createdAt: newCreatedAt } : g));
+    }
+  }, [tasks, groups]);
+
+
   const duplicateTask = useCallback((id: string) => {
     setTasks(prev => {
       const original = prev.find(t => t.id === id);
