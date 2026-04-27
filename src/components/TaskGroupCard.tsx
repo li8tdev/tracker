@@ -21,7 +21,7 @@ interface Props {
   onEditGroup: (id: string, updates: { name?: string; date?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number; customTimeMinutes?: number }) => void;
   onDeleteGroup: (id: string) => void;
   onDuplicateGroup?: (id: string) => void;
-  onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean) => void;
+  onAddSubtask: (title: string, pomodoroCount: number, groupId: string, date?: string, scheduledTime?: string, isDaily?: boolean, customTimeMinutes?: number) => void;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
