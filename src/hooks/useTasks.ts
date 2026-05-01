@@ -283,10 +283,16 @@ export function useTasks() {
   const resetDailyTasks = useCallback((newDate: string) => {
     setTasks(prev => {
       const dailyGroupIdSet = new Set(groups.filter(g => g.isDaily).map(g => g.id));
+      const allGroupIdSet = new Set(groups.map(g => g.id));
       const isDailyTask = (t: Task) => !!t.isDaily || (!!t.groupId && dailyGroupIdSet.has(t.groupId));
 
-      // Step 1: drop any existing todo copies for newDate so we can regenerate cleanly
-      const cleaned = prev.filter(t => !(isDailyTask(t) && t.date === newDate && t.status === 'todo'));
+      // Step 1: drop any existing todo copies for newDate so we can regenerate cleanly.
+      // Also drop ORPHAN tasks whose group no longer exists (deleted groups must stay deleted).
+      const cleaned = prev.filter(t => {
+        if (t.groupId && !allGroupIdSet.has(t.groupId)) return false;
+        if (isDailyTask(t) && t.date === newDate && t.status === 'todo') return false;
+        return true;
+      });
 
       // Step 2: pick the most recent template per (title + group) across ALL daily tasks
       // Sort by createdAt desc so the first occurrence we keep is the freshest template
