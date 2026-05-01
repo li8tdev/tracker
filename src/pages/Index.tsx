@@ -96,6 +96,23 @@ const Index = () => {
     savePomodoroMeta(toSave);
   }, [pomodoroMeta]);
 
+  // Auto-generate daily tasks for today if missing (avoids needing manual "Reparar diarias")
+  const lastAutoResetRef = useRef<string>('');
+  useEffect(() => {
+    const today = getToday();
+    if (lastAutoResetRef.current === today) return;
+    const hasDailyTemplate =
+      allTasks.some(t => t.isDaily) || allGroups.some(g => g.isDaily);
+    if (!hasDailyTemplate) return;
+    const hasTodayDaily =
+      allTasks.some(t => t.isDaily && t.date === today) ||
+      allGroups.some(g => g.isDaily && g.date === today);
+    if (!hasTodayDaily) {
+      resetDailyTasks(today);
+    }
+    lastAutoResetRef.current = today;
+  }, [allTasks, allGroups, resetDailyTasks]);
+
   useEffect(() => {
     sessionActiveRef.current = session.active;
   }, [session.active]);
