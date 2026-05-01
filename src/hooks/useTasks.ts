@@ -30,7 +30,22 @@ export function useTasks() {
   }, [selectedDate]);
 
   const editGroup = useCallback((id: string, updates: { name?: string; date?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number; customTimeMinutes?: number }) => {
-    setGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+    const target = groups.find(g => g.id === id);
+    const isDailyGroup = target?.isDaily || updates.isDaily;
+    // For daily groups, propagate non-date edits to ALL historical copies sharing the same name
+    // so edits stick across days (templates used by reset/repair stay consistent).
+    const { date: _omitDate, ...propagatable } = updates;
+    setGroups(prev => prev.map(g => {
+      if (g.id === id) return { ...g, ...updates };
+      if (isDailyGroup && target && g.isDaily && g.name === (updates.name ?? target.name) ) {
+        return { ...g, ...propagatable };
+      }
+      // Match by previous name too in case rename
+      if (isDailyGroup && target && g.isDaily && g.name === target.name) {
+        return { ...g, ...propagatable };
+      }
+      return g;
+    }));
     // If date changed on a non-daily group, propagate to all tasks in the group
     if (updates.date) {
       setTasks(prev => prev.map(t => {
