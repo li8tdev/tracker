@@ -119,10 +119,26 @@ export function useTasks() {
   }, [tasks, updateGroupCompletionFromTasks]);
 
   const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string; isDaily?: boolean; customTimeMinutes?: number }) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== id) return t;
-      return { ...t, ...updates };
-    }));
+    setTasks(prev => {
+      const target = prev.find(t => t.id === id);
+      if (!target) return prev;
+      const isDailyTask = target.isDaily || updates.isDaily;
+      // For daily tasks, propagate non-date/non-status edits to ALL historical copies
+      // sharing the same (title, groupId), so edits persist across days.
+      const { date: _d, scheduledTime: _s, groupId: _g, ...propagatable } = updates;
+      return prev.map(t => {
+        if (t.id === id) return { ...t, ...updates };
+        if (
+          isDailyTask &&
+          t.isDaily &&
+          t.title === target.title &&
+          (t.groupId ?? '') === (target.groupId ?? '')
+        ) {
+          return { ...t, ...propagatable };
+        }
+        return t;
+      });
+    });
   }, []);
 
   const incrementPomodoro = useCallback((id: string) => {
