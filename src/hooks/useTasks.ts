@@ -132,7 +132,16 @@ export function useTasks() {
   }, []);
 
   const deleteTask = useCallback((id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+    setTasks(prev => {
+      const target = prev.find(t => t.id === id);
+      if (!target) return prev;
+      // If it's a daily task (standalone or inside a daily group), remove ALL historical copies
+      // sharing the same (title, groupId) so it never reappears via reset/repair.
+      if (target.isDaily) {
+        return prev.filter(t => !(t.isDaily && t.title === target.title && (t.groupId ?? '') === (target.groupId ?? '')));
+      }
+      return prev.filter(t => t.id !== id);
+    });
   }, []);
 
   const reorderTask = useCallback((draggedId: string, targetId: string, position: 'before' | 'after') => {
