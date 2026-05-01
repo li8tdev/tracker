@@ -30,7 +30,22 @@ export function useTasks() {
   }, [selectedDate]);
 
   const editGroup = useCallback((id: string, updates: { name?: string; date?: string; isDaily?: boolean; scheduledTime?: string; pomodoroCount?: number; customTimeMinutes?: number }) => {
-    setGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+    const target = groups.find(g => g.id === id);
+    const isDailyGroup = target?.isDaily || updates.isDaily;
+    // For daily groups, propagate non-date edits to ALL historical copies sharing the same name
+    // so edits stick across days (templates used by reset/repair stay consistent).
+    const { date: _omitDate, ...propagatable } = updates;
+    setGroups(prev => prev.map(g => {
+      if (g.id === id) return { ...g, ...updates };
+      if (isDailyGroup && target && g.isDaily && g.name === (updates.name ?? target.name) ) {
+        return { ...g, ...propagatable };
+      }
+      // Match by previous name too in case rename
+      if (isDailyGroup && target && g.isDaily && g.name === target.name) {
+        return { ...g, ...propagatable };
+      }
+      return g;
+    }));
     // If date changed on a non-daily group, propagate to all tasks in the group
     if (updates.date) {
       setTasks(prev => prev.map(t => {
@@ -104,10 +119,26 @@ export function useTasks() {
   }, [tasks, updateGroupCompletionFromTasks]);
 
   const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string; isDaily?: boolean; customTimeMinutes?: number }) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== id) return t;
-      return { ...t, ...updates };
-    }));
+    setTasks(prev => {
+      const target = prev.find(t => t.id === id);
+      if (!target) return prev;
+      const isDailyTask = target.isDaily || updates.isDaily;
+      // For daily tasks, propagate non-date/non-status edits to ALL historical copies
+      // sharing the same (title, groupId), so edits persist across days.
+      const { date: _d, scheduledTime: _s, groupId: _g, ...propagatable } = updates;
+      return prev.map(t => {
+        if (t.id === id) return { ...t, ...updates };
+        if (
+          isDailyTask &&
+          t.isDaily &&
+          t.title === target.title &&
+          (t.groupId ?? '') === (target.groupId ?? '')
+        ) {
+          return { ...t, ...propagatable };
+        }
+        return t;
+      });
+    });
   }, []);
 
   const incrementPomodoro = useCallback((id: string) => {
