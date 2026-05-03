@@ -1,2 +1,2 @@
 
-This trackers is created to my own. But if you find this util. Be able to use it.
+This trackers is created to my own. But if you find this useful. You can use it. NOTE: I'll write features soon...
