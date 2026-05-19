@@ -390,14 +390,18 @@ export function TaskGroupCard({
         setGroupDropIndicator(null);
         const isGroup = e.dataTransfer.types.includes('application/x-group');
         if (isGroup) {
-          if (!onReorderGroup) return;
+          if (!onReorderGroup && !onReorderMixed) return;
           const data = e.dataTransfer.getData('text/plain');
           if (!data.startsWith('group:')) return;
           const draggedId = data.replace('group:', '');
           if (draggedId === group.id) return;
           e.preventDefault();
           e.stopPropagation();
-          onReorderGroup(draggedId, group.id, position);
+          if (onReorderMixed) {
+            onReorderMixed(draggedId, 'group', group.id, 'group', position);
+            return;
+          }
+          onReorderGroup?.(draggedId, group.id, position);
           return;
         }
         // Task dropped on a group: cross reorder (place task before/after this group in mixed list)
