@@ -178,7 +178,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
       onDragOver={(e) => {
         const isGroup = e.dataTransfer.types.includes('application/x-group');
         if (isGroup && !onReorderMixed) return;
-        if (!isGroup && !onReorder) return;
+        if (!isGroup && !onReorder && !onReorderMixed) return;
         if (!isGroup && !e.dataTransfer.types.includes('text/plain')) return;
         e.preventDefault();
         e.stopPropagation();
@@ -201,12 +201,15 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
           onReorderMixed(groupId, 'group', task.id, 'task', position);
           return;
         }
-        if (!onReorder) return;
         const draggedId = e.dataTransfer.getData('text/plain');
         if (!draggedId || draggedId.startsWith('group:') || draggedId === task.id) return;
         e.preventDefault();
         e.stopPropagation();
-        onReorder(draggedId, task.id, position);
+        if (onReorderMixed) {
+          onReorderMixed(draggedId, 'task', task.id, 'task', position);
+          return;
+        }
+        onReorder?.(draggedId, task.id, position);
       }}
       className={`group relative p-2.5 rounded-lg transition-all hover:bg-secondary/40 cursor-grab active:cursor-grabbing ${task.status === 'done' ? 'opacity-50' : ''} ${dropIndicator === 'before' ? 'border-t-2 border-accent' : ''} ${dropIndicator === 'after' ? 'border-b-2 border-accent' : ''}`}
     >
