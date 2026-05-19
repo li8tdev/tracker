@@ -222,10 +222,54 @@ export function useTasks() {
   ) => {
     if (draggedId === targetId && draggedKind === targetKind) return;
 
-    // Build mixed list of {id, kind, createdAt} sorted ascending by createdAt
+    // Scope the mixed list to items currently visible for selectedDate so that
+    // createdAt midpoint placement is relative to what the user actually sees.
+    const dailyGroupIdsLocal = new Set(groups.filter(g => g.isDaily).map(g => g.id));
+    const projectGroupIdsOnDate = new Set(
+      groups.filter(g => !g.isDaily && g.date !== selectedDate)
+        .filter(g => tasks.some(t => t.groupId === g.id && t.date === selectedDate))
+        .map(g => g.id)
+    );
+    const visibleTasks = tasks.filter(t => {
+      if (t.date === selectedDate) return true;
+      if (t.groupId && projectGroupIdsOnDate.has(t.groupId)) return true;
+      return false;
+    });
+    const visibleGroups = groups.filter(g => g.date === selectedDate || g.isDaily || projectGroupIdsOnDate.has(g.id));
+
+    // Determine target column status so we order only within that column.
+    let columnStatus: TaskStatus | null = null;
+    if (targetKind === 'task') {
+      const targetTask = visibleTasks.find(t => t.id === targetId);
+      if (targetTask) columnStatus = targetTask.status;
+    } else {
+      const targetGroup = visibleGroups.find(g => g.id === targetId);
+      if (targetGroup) {
+        const gt = visibleTasks.filter(t => t.groupId === targetGroup.id && (targetGroup.isDaily ? t.date === selectedDate : true));
+        if (targetGroup.completedAt && gt.length > 0) columnStatus = 'done';
+        else if (gt.some(t => t.status === 'in_progress')) columnStatus = 'in_progress';
+        else columnStatus = 'todo';
+      }
+    }
+
+    const taskInColumn = (t: Task) => {
+      if (t.groupId) return false; // grouped tasks render inside their group card
+      return columnStatus ? t.status === columnStatus : true;
+    };
+    const groupInColumn = (g: TaskGroup) => {
+      const gt = visibleTasks.filter(t => t.groupId === g.id && (g.isDaily ? t.date === selectedDate : true));
+      if (!columnStatus) return true;
+      if (columnStatus === 'todo') {
+        if (gt.length === 0 && !g.completedAt) return true;
+        return gt.length > 0 && gt.some(t => t.status === 'todo');
+      }
+      if (columnStatus === 'in_progress') return gt.some(t => t.status === 'in_progress');
+      return !!g.completedAt && gt.length > 0;
+    };
+
     const mixed = [
-      ...tasks.map(t => ({ id: t.id, kind: 'task' as const, createdAt: t.createdAt })),
-      ...groups.map(g => ({ id: g.id, kind: 'group' as const, createdAt: g.createdAt })),
+      ...visibleTasks.filter(taskInColumn).map(t => ({ id: t.id, kind: 'task' as const, createdAt: t.createdAt })),
+      ...visibleGroups.filter(groupInColumn).map(g => ({ id: g.id, kind: 'group' as const, createdAt: g.createdAt })),
     ]
       .filter(x => !(x.kind === draggedKind && x.id === draggedId))
       .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''));
@@ -241,10 +285,8 @@ export function useTasks() {
 
     let newTime: number;
     if (beforeIdx < 0) {
-      // Insert at the very top: 1ms before the first
       newTime = afterTime - 1;
     } else if (afterIdx >= mixed.length) {
-      // Insert at the very bottom: 1ms after the last
       newTime = beforeTime + 1;
     } else {
       newTime = Math.floor((beforeTime + afterTime) / 2);
@@ -258,7 +300,7 @@ export function useTasks() {
     } else {
       setGroups(prev => prev.map(g => g.id === draggedId ? { ...g, createdAt: newCreatedAt } : g));
     }
-  }, [tasks, groups]);
+  }, [tasks, groups, selectedDate]);
 
 
   const duplicateTask = useCallback((id: string) => {
