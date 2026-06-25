@@ -53,6 +53,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
 
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description ?? '');
   const [editPomodoros, setEditPomodoros] = useState(task.pomodoroCount);
   const [editDate, setEditDate] = useState<Date>(new Date(task.date + 'T12:00:00'));
   const [editTime, setEditTime] = useState(task.scheduledTime ?? '');
@@ -64,6 +65,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
 
   const startEdit = () => {
     setEditTitle(task.title);
+    setEditDescription(task.description ?? '');
     setEditPomodoros(task.pomodoroCount);
     setEditDate(new Date(task.date + 'T12:00:00'));
     setEditTime(task.scheduledTime ?? '');
@@ -77,6 +79,7 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
   const saveEdit = () => {
     onEdit?.(task.id, {
       title: editTitle.trim() || task.title,
+      description: editDescription.trim() || undefined,
       pomodoroCount: editTimerMode === 'pomodoro' ? editPomodoros : 1,
       date: editDate.toISOString().split('T')[0],
       scheduledTime: editTime || undefined,
