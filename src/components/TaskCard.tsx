@@ -238,6 +238,11 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
           <p className={`text-[13px] leading-snug break-words ${task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
             {task.title}
           </p>
+          {task.description && (
+            <p className="text-[11px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
+              {task.description}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono">
               {task.customTimeMinutes ? `⏱ ${task.customTimeMinutes}min` : `🍅 ${task.pomodorosCompleted}/${task.pomodoroCount}`}
