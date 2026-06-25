@@ -99,7 +99,15 @@ export function TaskCard({ task, onStatusChange, onDelete, onEdit, onDuplicate, 
           onChange={e => setEditTitle(e.target.value)}
           className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-accent/30"
           autoFocus
-          onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
+        />
+        <textarea
+          value={editDescription}
+          onChange={e => setEditDescription(e.target.value)}
+          placeholder="Descripción (opcional)"
+          rows={2}
+          className="w-full bg-background border border-border rounded-md px-2.5 py-1.5 text-[11px] focus:outline-none focus:ring-2 focus:ring-accent/30 resize-y"
+          onKeyDown={e => { if (e.key === 'Escape') cancelEdit(); }}
         />
         <div className="flex flex-wrap items-center gap-1.5">
           <div className="flex items-center gap-1">
