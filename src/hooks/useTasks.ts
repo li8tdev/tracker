@@ -118,7 +118,7 @@ export function useTasks() {
     }
   }, [tasks, updateGroupCompletionFromTasks]);
 
-  const editTask = useCallback((id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string; isDaily?: boolean; customTimeMinutes?: number }) => {
+  const editTask = useCallback((id: string, updates: { title?: string; description?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; groupId?: string; isDaily?: boolean; customTimeMinutes?: number }) => {
     setTasks(prev => {
       const target = prev.find(t => t.id === id);
       if (!target) return prev;
