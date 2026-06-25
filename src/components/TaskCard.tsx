@@ -19,7 +19,7 @@ interface Props {
   task: Task;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
-  onEdit?: (id: string, updates: { title?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean; customTimeMinutes?: number }) => void;
+  onEdit?: (id: string, updates: { title?: string; description?: string; pomodoroCount?: number; date?: string; scheduledTime?: string; isDaily?: boolean; customTimeMinutes?: number }) => void;
   onDuplicate?: (id: string) => void;
   pomodoroState?: PomodoroState;
   onPomodoroStart?: (id: string) => void;
