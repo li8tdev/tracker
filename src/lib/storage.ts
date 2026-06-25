@@ -3,6 +3,7 @@ export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export interface Task {
   id: string;
   title: string;
+  description?: string; // optional free-text notes
   status: TaskStatus;
   date: string; // YYYY-MM-DD
   scheduledTime?: string; // HH:mm
